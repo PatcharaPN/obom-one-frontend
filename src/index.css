@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/* Kanit Regular */
+@font-face {
+  font-family: "Kanit";
+  src: url("./assets/fonts/kanit/Kanit-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Kanit Medium */
+@font-face {
+  font-family: "Kanit";
+  src: url("./assets/fonts/kanit/Kanit-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* Kanit Bold */
+@font-face {
+  font-family: "Kanit";
+  src: url("./assets/fonts/kanit/Kanit-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Kanit Light */
+@font-face {
+  font-family: "Kanit";
+  src: url("./assets/fonts/kanit/Kanit-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* ใช้ global font */
+* {
+  font-family: "Kanit", sans-serif;
+}
