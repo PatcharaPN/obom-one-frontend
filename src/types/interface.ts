@@ -23,3 +23,7 @@ export interface ButtonProps {
   disabled?: boolean;
 }
 
+export interface UserListProp {
+  userName: string;
+  userPic: string;
+}

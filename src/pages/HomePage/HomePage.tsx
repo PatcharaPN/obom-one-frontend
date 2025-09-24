@@ -46,13 +46,14 @@ const inLine: RequestData[] = [
 
 const HomePage = () => {
   const dispatch = useAppDispatch();
-  const { tasks, loading, error } = useAppSelector((state) => state.task);
+  const { tasks } = useAppSelector((state) => state.task);
   const [selectedPending, setSelectedPending] = useState<string[]>([]);
   const [selectedInLine, setSelectedInLine] = useState<string[]>([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [openPending, setOpenPending] = useState(true);
   const [openInLine, setOpenInLine] = useState(true);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(true);
+  const [isTaskDetailOpen, setTaskDetailOpen] = useState(true);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const pendingTasks = tasks.filter((t) => !t.isApprove);
   const inLineTasks = tasks.filter((t) => t.isApprove);
   const handleSelectAll = (
@@ -91,6 +92,10 @@ const HomePage = () => {
     }).format(date);
   }
 
+  const handleTaskDetail = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setTaskDetailOpen(true);
+  };
   return (
     <div className="grid grid-rows-[280px_1fr] gap-4">
       <div className="flex gap-4 overflow-x-auto">
@@ -158,6 +163,7 @@ const HomePage = () => {
             <TableBody>
               {pendingTasks.map((row) => (
                 <TableRow
+                  onClick={() => handleTaskDetail(row._id as string)}
                   key={row._id}
                   selected={selectedPending.includes(row._id || "")}
                   className="cursor-pointer hover:bg-blue-400/10 duration-300 transition-all"
@@ -183,7 +189,7 @@ const HomePage = () => {
                     <div className="flex items-center gap-2">
                       <div className="">
                         <img
-                          src={`${import.meta.env.VITE_BASE_URL}/${
+                          src={`${import.meta.env.VITE_BASE_URL}/api/${
                             row.sale.profilePic
                           }`}
                           alt="Profile"
@@ -244,8 +250,9 @@ const HomePage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {inLineTasks.map((row) => (
+              {inLineTasks.map((row: any) => (
                 <TableRow
+                  onClick={() => handleTaskDetail(row._id as string)}
                   key={row._id}
                   selected={selectedInLine.includes(row._id || "")}
                   className="cursor-pointer hover:bg-blue-400/10 duration-300 transition-all"
@@ -302,13 +309,12 @@ const HomePage = () => {
           open={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
         />
-      )}{" "}
-      {isTaskDetailOpen && (
-        <TaskDetail
-          open={isTaskDetailOpen}
-          onClose={() => setIsDetailModalOpen(false)}
-        />
       )}
+      <TaskDetail
+        open={isTaskDetailOpen}
+        onClose={() => setTaskDetailOpen(false)}
+        taskId={selectedTaskId}
+      />
     </div>
   );
 };

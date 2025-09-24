@@ -22,6 +22,7 @@ import { useAppDispatch, useAppSelector } from "../store";
 import { useEffect } from "react";
 import { fetchSale } from "../features/redux/UserSlice";
 import type { IUser } from "../types/task";
+import { Bounce, toast } from "react-toastify";
 
 interface FadeProps {
   children: React.ReactElement<any>;
@@ -73,9 +74,7 @@ interface DetailModalProps {
 
 export default function DetailModal({ open, onClose }: DetailModalProps) {
   const dispatch = useAppDispatch();
-  const { sales, users, loading, error } = useAppSelector(
-    (state) => state.user
-  );
+  const { sales } = useAppSelector((state) => state.user);
   const [titleName, setTitleName] = React.useState("");
   const [companyName, setCompanyName] = React.useState("");
   const [companyPrefix, setCompanyPrefix] = React.useState("");
@@ -84,9 +83,9 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
   const [quantity, setQuantity] = React.useState<number | "">("");
   const [productUnit, setProductUnit] = React.useState<number | "">("");
   const [sale, setSale] = React.useState(""); // user id
-  const [description, setDescription] = React.useState("");
+  const [description] = React.useState("");
   const [taskType, setTaskType] = React.useState<string[]>(["งานใหม่"]);
-  const [files, setFiles] = React.useState<File[]>([]);
+  const [files] = React.useState<File[]>([]);
 
   // const { loading, error } = useAppSelector((state) => state.task);
 
@@ -113,10 +112,33 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
     dispatch(createTask(formData))
       .unwrap()
       .then(() => {
+        toast("🦄 Wow so easy!", {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+          transition: Bounce,
+        });
         console.log("สร้างงานสำเร็จ");
         onClose();
       })
-      .catch((err) => console.error("สร้างงานไม่สำเร็จ:", err));
+      .catch((err) => {
+        toast.error("เกิดข้อผิดพลาดในการสร้างคำขอ !", {
+          position: "bottom-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+          transition: Bounce,
+        });
+      });
   };
   return (
     <Modal
@@ -278,7 +300,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
             <Autocomplete
               className="mt-5"
               multiple
-              onChange={(event, value) => setTaskType(value)}
+              onChange={(_, value) => setTaskType(value)}
               options={taskTypes}
               // getOptionLabel={(option) => option}
               filterSelectedOptions
