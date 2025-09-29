@@ -1,17 +1,35 @@
 import { Icon } from "@iconify/react";
 import React from "react";
 
-const TaskRow = () => {
-  const [attachments, setAttachments] = React.useState<File[]>([]);
+export interface TaskRowProps {
+  index: number;
+  data: {
+    name: string;
+    material: string;
+    quantity: number | "";
+    attachments: File[];
+  };
+  onDelete: (index: number) => void;
+  onChange: (index: number, newData: any) => void;
+}
 
+const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
     const newFiles = Array.from(event.target.files);
-    setAttachments((prev) => [...prev, ...newFiles]);
+    onChange(index, {
+      ...data,
+      attachments: [...data.attachments, ...newFiles],
+    });
   };
 
-  const removeAttachment = (index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  const removeAttachment = (fileIndex: number) => {
+    const newAttachments = data.attachments.filter((_, i) => i !== fileIndex);
+    onChange(index, { ...data, attachments: newAttachments });
+  };
+
+  const handleFieldChange = (field: string, value: any) => {
+    onChange(index, { ...data, [field]: value });
   };
 
   return (
@@ -21,9 +39,11 @@ const TaskRow = () => {
           type="text"
           className="flex-1 min-w-0 px-2 outline-none border-r border-gray-200"
           placeholder="ชื่อชิ้นงาน"
+          onChange={(e) => handleFieldChange("name", e.target.value)}
         />
         <select
           name="material"
+          onChange={(e) => handleFieldChange("material", e.target.value)}
           className="flex-1 min-w-0 px-2 outline-none text-sm border-r border-gray-200"
         >
           <option value="">เลือกชนิด Material</option>
@@ -35,9 +55,12 @@ const TaskRow = () => {
           type="number"
           className="flex-1 min-w-0 px-2 outline-none border-r border-gray-200"
           placeholder="จำนวน"
+          onChange={(e) =>
+            handleFieldChange("quantity", e.target.valueAsNumber)
+          }
         />
         <div className="flex-[0.5] flex items-center justify-evenly bg-gray-100 px-2 text-sm">
-          <button>
+          <button onClick={() => onDelete(index)}>
             <Icon icon="tabler:trash" color="#FF5858" width="17" height="17" />
           </button>
           <button>
@@ -51,11 +74,11 @@ const TaskRow = () => {
         <p className="text-[0.8rem] font-semibold mb-1">ไฟล์แนบ</p>
 
         <div className="flex flex-col space-y-1 max-h-32 overflow-y-auto border border-gray-200 rounded p-2">
-          {attachments.length === 0 && (
+          {data.attachments.length === 0 && (
             <p className="text-gray-400 text-sm pl-2">ยังไม่มีไฟล์แนบ</p>
           )}
 
-          {attachments.map((file, idx) => (
+          {data.attachments.map((file, idx) => (
             <div
               key={idx}
               className="flex justify-between items-center bg-gray-50 px-2 py-1 rounded"

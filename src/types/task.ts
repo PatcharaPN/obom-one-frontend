@@ -1,8 +1,9 @@
 export interface Attachment {
-  filename: string;
-  url: string;
+  _id?: string;
+  fileName: string;
+  fileUrl: string;
   fileType?: string;
-  uploadedAt: string;
+  createdAt?: string;
 }
 
 export interface Task {
@@ -12,15 +13,15 @@ export interface Task {
   companyPrefix: string;
   poNumber?: string;
   qtNumber?: string;
-  quantity?: number;
-  productUnit?: number;
-  sale: IUser;
+  sale: IUser; // user object
   description?: string;
   taskType: ("งานใหม่" | "งานแก้ไข" | "งานด่วน" | "งานเสีย")[];
   customTags?: string[];
-  attachments: Attachment[];
-  material: string;
-  dueDate: Date;
+  attachments: Attachment[]; // array ของไฟล์
+  material?: string;
+  quantity?: number;
+  productUnit?: number;
+  dueDate?: Date;
   isApprove: boolean;
   createdAt?: string;
   updatedAt?: string;

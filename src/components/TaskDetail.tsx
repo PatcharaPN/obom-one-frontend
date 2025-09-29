@@ -184,8 +184,8 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
                   <div>
                     {" "}
                     <PDFThumbnail
-                      filename={file.filename}
-                      fileUrl={`https://one.obomgauge.com/api${file.url}`}
+                      filename={file.fileName}
+                      fileUrl={`https://one.obomgauge.com/api${file.fileUrl}`}
                       width={120}
                     />{" "}
                   </div>
@@ -204,7 +204,7 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
                   {/* Avatar */}
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
                     <img
-                      src={`${baseUrl}/api/${taskData.sale.profilePic}`}
+                      src={`${baseUrl}/api/${taskData.sale.profilePic}` || ""}
                       className="w-full h-full object-cover"
                     />
                   </div>

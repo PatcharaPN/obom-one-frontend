@@ -9,9 +9,6 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import { Icon } from "@iconify/react";
 import InputLabel from "@mui/material/InputLabel";
-import FormHelperText from "@mui/material/FormHelperText";
-import InputAdornment from "@mui/material/InputAdornment";
-import OutlinedInput from "@mui/material/OutlinedInput";
 import TextField from "@mui/material/TextField";
 import TextareaAutosize from "@mui/material/TextareaAutosize";
 import Button from "@mui/material/Button";
@@ -86,17 +83,40 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
   const [companyPrefix, setCompanyPrefix] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [qtNumber, setQtNumber] = useState("");
-  const [quantity, setQuantity] = useState<number | "">("");
-  const [productUnit, setProductUnit] = useState<number | "">("");
+
   const [sale, setSale] = useState(""); // user id
   const [description] = useState("");
   const [taskType, setTaskType] = useState<string[]>(["งานใหม่"]);
   const [files, _] = useState<File[]>([]);
+  const [subtasks, setSubTasks] = useState<
+    {
+      name: string;
+      material: string;
+      quantity: number | "";
+      attachments: File[];
+    }[]
+  >([{ name: "", material: "", quantity: "", attachments: [] }]);
 
   useEffect(() => {
     dispatch(fetchSale());
   }, [dispatch]);
 
+  const handleTaskChange = (index: number, newData: any) => {
+    setSubTasks((prev) => {
+      const newTasks = [...prev];
+      newTasks[index] = newData;
+      return newTasks;
+    });
+  };
+  const addTaskRow = () => {
+    setSubTasks((prev) => [
+      ...prev,
+      { name: "", material: "", quantity: "", attachments: [] },
+    ]);
+  };
+  const removeRow = (taskIndex: number) => {
+    setSubTasks((prevTasks) => prevTasks.filter((_, i) => i != taskIndex));
+  };
   const handleSubmit = async () => {
     try {
       const formData = new FormData();
@@ -105,16 +125,24 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
       formData.append("companyPrefix", companyPrefix);
       formData.append("poNumber", poNumber);
       formData.append("qtNumber", qtNumber);
-      formData.append("quantity", String(quantity));
-      formData.append("productUnit", String(productUnit));
       formData.append("sale", sale);
-      formData.append("description", description || ""); // bind description
+      formData.append("description", description || "");
+
       taskType.forEach((t) => formData.append("taskType[]", t));
 
-      // append ไฟล์ทั้งหมด
-      files.forEach((file) => formData.append("attachments", file));
+      const tasksData = subtasks.map((task) => ({
+        name: task.name,
+        material: task.material,
+        quantity: task.quantity,
+      }));
+      formData.append("tasks", JSON.stringify(tasksData));
 
-      // ส่งผ่าน Redux Thunk
+      subtasks.forEach((task, idx) => {
+        task.attachments.forEach((file) =>
+          formData.append(`tasks[${idx}][attachments]`, file)
+        );
+      });
+
       await dispatch(createTask(formData)).unwrap();
 
       toast("🦄 สร้างงานสำเร็จ!", {
@@ -128,8 +156,8 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
         theme: "colored",
         transition: Bounce,
       });
+
       console.log([...formData]);
-      console.log("สร้างงานสำเร็จ");
       onClose();
     } catch (err: any) {
       toast.error("เกิดข้อผิดพลาดในการสร้างคำขอ!", {
@@ -284,14 +312,23 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 }}
                 className="max-h-[180px] overflow-y-auto border border-gray-200 rounded p-4 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
               >
-                {Array.from({ length: subTaskCount }).map((_, idx) => (
-                  <TaskRow key={idx} />
+                {subtasks.map((task, idx) => (
+                  <TaskRow
+                    key={idx}
+                    index={idx}
+                    data={task}
+                    onDelete={removeRow}
+                    onChange={handleTaskChange}
+                  />
                 ))}
               </div>
 
               <div className="w-full flex justify-center items-center mt-2">
                 <button
-                  onClick={() => setSubTaskCount(subTaskCount + 1)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addTaskRow();
+                  }}
                   className="flex gap-1 px-3 py-1 text-[#0079CA] hover:text-[#005a8d] transition-colors items-center"
                 >
                   เพิ่มรายการใหม่
@@ -324,9 +361,11 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                   >
                     <div className="flex gap-2">
                       <img
-                        src={`${import.meta.env.VITE_BASE_URL}/api/${
-                          s.profilePic
-                        }`}
+                        src={
+                          `${import.meta.env.VITE_BASE_URL}/api/${
+                            s.profilePic
+                          }` || ""
+                        }
                         alt="Profile"
                         className="rounded-full w-6 h-6 object-cover"
                       />{" "}

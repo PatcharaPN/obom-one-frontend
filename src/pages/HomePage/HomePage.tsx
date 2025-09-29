@@ -54,8 +54,9 @@ const HomePage = () => {
   const [openInLine, setOpenInLine] = useState(true);
   const [isTaskDetailOpen, setTaskDetailOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const pendingTasks = tasks.filter((t) => !t.isApprove);
-  const inLineTasks = tasks.filter((t) => t.isApprove);
+  const pendingTasks = (tasks || []).filter((t) => !t.isApprove);
+
+  const inLineTasks = (tasks || []).filter((t) => !t.isApprove);
   const handleSelectAll = (
     data: RequestData[],
     type: "pending" | "inline",
@@ -183,18 +184,22 @@ const HomePage = () => {
                   <TableCell>{row.companyName}</TableCell>
                   <TableCell>{row.material}</TableCell>
                   <TableCell>
-                    {formatThaiDate(row.dueDate.toLocaleString())}
+                    {/* {formatThaiDate(row.dueDate.toLocaleString())} */}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <img
-                        src={`${import.meta.env.VITE_BASE_URL}/api/${
-                          row.sale.profilePic
-                        }`}
-                        alt="Profile"
+                        src={
+                          row.sale?.profilePic
+                            ? `${import.meta.env.VITE_BASE_URL}/api/${
+                                row.sale.profilePic
+                              }`
+                            : "/default.png" // เผื่อไม่มี profilePic
+                        }
+                        alt={row.sale?.name || "ไม่ระบุ"}
                         className="rounded-full w-6 h-6 object-cover"
                       />
-                      {row.sale.name}
+                      {row.sale?.name || "ไม่ระบุ"}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -274,20 +279,22 @@ const HomePage = () => {
                   <TableCell>{row.companyName}</TableCell>
                   <TableCell>{row.material}</TableCell>
                   <TableCell>
-                    {formatThaiDate(row.dueDate.toLocaleString())}
+                    {/* {formatThaiDate(row.dueDate.toLocaleString())} */}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="">
-                        <img
-                          src={`${import.meta.env.VITE_BASE_URL}/${
-                            row.sale.profilePic
-                          }`}
-                          alt="Profile"
-                          className="rounded-full w-6 h-6 object-cover"
-                        />
-                      </div>
-                      {row.sale.name}
+                      <img
+                        src={
+                          row.sale?.profilePic
+                            ? `${import.meta.env.VITE_BASE_URL}/api/${
+                                row.sale.profilePic
+                              }`
+                            : "/default.png"
+                        }
+                        alt={row.sale?.name || "ไม่ระบุ"}
+                        className="rounded-full w-6 h-6 object-cover"
+                      />
+                      {row.sale?.name || "ไม่ระบุ"}
                     </div>
                   </TableCell>
                   <TableCell>

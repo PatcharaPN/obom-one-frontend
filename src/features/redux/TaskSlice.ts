@@ -12,8 +12,8 @@ export const fetchTasks = createAsyncThunk<Task[]>(
   "task/fetchTasks",
   async (_, thunkAPI) => {
     try {
-      const response = await axiosInstance.get("/task/getAllTasks");
-      return response.data.tasks;
+      const res = await axiosInstance.get("/task/getAllTasks");
+      return res.data;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }
@@ -27,7 +27,7 @@ export const createTask = createAsyncThunk(
       const res = await axiosInstance.post("/task/create", formData, {
         headers: {},
       });
-      return res.data.data;
+      return res.data;
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -58,7 +58,7 @@ const taskSlice = createSlice({
       })
       .addCase(createTask.fulfilled, (state, action) => {
         state.loading = false;
-        state.tasks.push(action.payload);
+        state.tasks.push(action.payload.task);
       })
       .addCase(createTask.rejected, (state, action) => {
         state.loading = false;
