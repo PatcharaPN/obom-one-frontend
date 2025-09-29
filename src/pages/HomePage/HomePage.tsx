@@ -49,10 +49,10 @@ const HomePage = () => {
   const { tasks } = useAppSelector((state) => state.task);
   const [selectedPending, setSelectedPending] = useState<string[]>([]);
   const [selectedInLine, setSelectedInLine] = useState<string[]>([]);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(true);
   const [openPending, setOpenPending] = useState(true);
   const [openInLine, setOpenInLine] = useState(true);
-  const [isTaskDetailOpen, setTaskDetailOpen] = useState(true);
+  const [isTaskDetailOpen, setTaskDetailOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const pendingTasks = tasks.filter((t) => !t.isApprove);
   const inLineTasks = tasks.filter((t) => t.isApprove);
@@ -100,7 +100,10 @@ const HomePage = () => {
     <div className="grid grid-rows-[280px_1fr] gap-4">
       <div className="flex gap-4 overflow-x-auto">
         <DashboardCard count={pendingTasks.length} type={"คำขอใหม่รออนุมัติ"} />
-        <DashboardCard count={inLine.length} type={"ขึ้นงานทั้งหมดวันนี้"} />
+        <DashboardCard
+          count={inLineTasks.length}
+          type={"ขึ้นงานทั้งหมดวันนี้"}
+        />
         <DashboardCard count={724} type={"ขึ้นงานทั้งหมดสัปดาห์นี้"} />
         <DashboardCard count={1724} type={"ขึ้นงานทั้งหมดเดือนนี้"} />
       </div>
@@ -136,8 +139,8 @@ const HomePage = () => {
         </IconButton>
       </div>
       <Collapse in={openPending}>
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer component={Paper} className="max-h-[250px]">
+          <Table stickyHeader>
             <TableHead>
               <TableRow className="bg-blue-400/5">
                 <TableCell padding="checkbox">
@@ -147,9 +150,6 @@ const HomePage = () => {
                       selectedPending.length > 0 &&
                       selectedPending.length < pendingTasks.length
                     }
-                    // onChange={(e) =>
-                    //   handleSelectAll(pendingTasks, "pending", e.target.checked)
-                    // }
                   />
                 </TableCell>
                 <TableCell>หัวข้อ</TableCell>
@@ -187,15 +187,13 @@ const HomePage = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="">
-                        <img
-                          src={`${import.meta.env.VITE_BASE_URL}/api/${
-                            row.sale.profilePic
-                          }`}
-                          alt="Profile"
-                          className="rounded-full w-6 h-6 object-cover"
-                        />
-                      </div>
+                      <img
+                        src={`${import.meta.env.VITE_BASE_URL}/api/${
+                          row.sale.profilePic
+                        }`}
+                        alt="Profile"
+                        className="rounded-full w-6 h-6 object-cover"
+                      />
                       {row.sale.name}
                     </div>
                   </TableCell>
@@ -215,7 +213,7 @@ const HomePage = () => {
         className="flex items-center cursor-pointer"
         onClick={() => setOpenInLine(!openInLine)}
       >
-        <Typography>อนุมัติขึ้นงานแล้ว ({inLine.length})</Typography>
+        <Typography>อนุมัติขึ้นงานแล้ว ({inLineTasks.length})</Typography>
         <IconButton size="small">
           <Icon
             icon={openInLine ? "mdi:chevron-up" : "mdi:chevron-down"}
@@ -225,8 +223,8 @@ const HomePage = () => {
         </IconButton>
       </div>
       <Collapse in={openInLine}>
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer component={Paper} className="max-h-[250px]">
+          <Table stickyHeader>
             <TableHead>
               <TableRow className="bg-blue-400/5">
                 <TableCell padding="checkbox">

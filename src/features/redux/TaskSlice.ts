@@ -25,7 +25,7 @@ export const createTask = createAsyncThunk(
   async (formData: FormData, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.post("/task/create", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {},
       });
       return res.data.data;
     } catch (err: any) {

@@ -30,7 +30,7 @@ const MainLayout = () => {
         subTitle="คำขอ"
         menuItems={subMenuItems}
       />
-      <main className="flex flex-col p-5 bg-white">
+      <main className="flex-1 flex flex-col p-5 bg-white overflow-y-auto">
         <Outlet />
       </main>
     </div>

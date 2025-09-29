@@ -12,7 +12,7 @@ const SectionLayout = ({
 }: SectionLayoutProps) => {
   const navigate = useNavigate();
   return (
-    <div className="bg-[#F8F8F8] flex flex-col h-full w-60 ">
+    <div className="bg-[#F8F8F8] flex flex-col w-60 h-screen sticky top-0">
       <div className="p-5">
         <h1 className="text-2xl">{title}</h1>
         {subTitle && <p className="text-xl pt-25">{subTitle}</p>}

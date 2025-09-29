@@ -21,7 +21,7 @@ export default function Sidebar({
   };
   return (
     <div
-      className={`rounded-tr-2xl rounded-br-2xl relative bg-gradient-to-b from-[#005B98] to-[#003C65] text-[#00C3FF] transition-all duration-300 ${
+      className={`rounded-tr-2xl rounded-br-2xl h-screen sticky top-0 bg-gradient-to-b from-[#005B98] to-[#003C65] text-[#00C3FF] transition-all duration-300 ${
         isCollapsed ? "w-[50px]" : "w-[250px]"
       }`}
     >

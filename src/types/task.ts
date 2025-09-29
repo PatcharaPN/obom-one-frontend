@@ -17,7 +17,7 @@ export interface Task {
   sale: IUser;
   description?: string;
   taskType: ("งานใหม่" | "งานแก้ไข" | "งานด่วน" | "งานเสีย")[];
-  customTags: string[];
+  customTags?: string[];
   attachments: Attachment[];
   material: string;
   dueDate: Date;

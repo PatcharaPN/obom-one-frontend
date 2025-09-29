@@ -1,5 +1,5 @@
-export const renderStatusBadge = (taskTypes: string[]) => {
-  return taskTypes.map((status) => {
+export const renderStatusBadge = (taskTypes?: string[]) => {
+  return taskTypes?.map((status) => {
     switch (status) {
       case "งานใหม่":
         return (

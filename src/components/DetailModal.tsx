@@ -19,10 +19,11 @@ import Autocomplete from "@mui/material/Autocomplete";
 
 import { createTask } from "../../src/features/redux/TaskSlice";
 import { useAppDispatch, useAppSelector } from "../store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { fetchSale } from "../features/redux/UserSlice";
 import type { IUser } from "../types/task";
 import { Bounce, toast } from "react-toastify";
+import TaskRow from "./TaskRow";
 
 interface FadeProps {
   children: React.ReactElement<any>;
@@ -59,11 +60,14 @@ const style = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 650,
-  height: "fit-content",
+  width: "90%",
+  maxWidth: 650,
+  maxHeight: "90vh",
   bgcolor: "background.paper",
   boxShadow: 24,
   p: 4,
+  overflowY: "auto",
+  borderRadius: 2,
 };
 
 interface DetailModalProps {
@@ -74,72 +78,75 @@ interface DetailModalProps {
 
 export default function DetailModal({ open, onClose }: DetailModalProps) {
   const dispatch = useAppDispatch();
+  const [subTaskCount, setSubTaskCount] = useState(1);
+  // const fileInputRef = useRef<HTMLInputElement>(null);
   const { sales } = useAppSelector((state) => state.user);
-  const [titleName, setTitleName] = React.useState("");
-  const [companyName, setCompanyName] = React.useState("");
-  const [companyPrefix, setCompanyPrefix] = React.useState("");
-  const [poNumber, setPoNumber] = React.useState("");
-  const [qtNumber, setQtNumber] = React.useState("");
-  const [quantity, setQuantity] = React.useState<number | "">("");
-  const [productUnit, setProductUnit] = React.useState<number | "">("");
-  const [sale, setSale] = React.useState(""); // user id
-  const [description] = React.useState("");
-  const [taskType, setTaskType] = React.useState<string[]>(["งานใหม่"]);
-  const [files] = React.useState<File[]>([]);
-
-  // const { loading, error } = useAppSelector((state) => state.task);
+  const [titleName, setTitleName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyPrefix, setCompanyPrefix] = useState("");
+  const [poNumber, setPoNumber] = useState("");
+  const [qtNumber, setQtNumber] = useState("");
+  const [quantity, setQuantity] = useState<number | "">("");
+  const [productUnit, setProductUnit] = useState<number | "">("");
+  const [sale, setSale] = useState(""); // user id
+  const [description] = useState("");
+  const [taskType, setTaskType] = useState<string[]>(["งานใหม่"]);
+  const [files, _] = useState<File[]>([]);
 
   useEffect(() => {
     dispatch(fetchSale());
   }, [dispatch]);
 
-  console.log(sales);
-
   const handleSubmit = async () => {
-    const formData = new FormData();
-    formData.append("titleName", titleName);
-    formData.append("companyName", companyName);
-    formData.append("companyPrefix", companyPrefix);
-    formData.append("poNumber", poNumber);
-    formData.append("qtNumber", qtNumber);
-    formData.append("quantity", String(quantity));
-    formData.append("productUnit", String(productUnit));
-    formData.append("sale", sale);
-    formData.append("description", description);
-    taskType.forEach((t) => formData.append("taskType[]", t));
-    files.forEach((file) => formData.append("files", file));
+    try {
+      const formData = new FormData();
+      formData.append("titleName", titleName);
+      formData.append("companyName", companyName);
+      formData.append("companyPrefix", companyPrefix);
+      formData.append("poNumber", poNumber);
+      formData.append("qtNumber", qtNumber);
+      formData.append("quantity", String(quantity));
+      formData.append("productUnit", String(productUnit));
+      formData.append("sale", sale);
+      formData.append("description", description || ""); // bind description
+      taskType.forEach((t) => formData.append("taskType[]", t));
 
-    dispatch(createTask(formData))
-      .unwrap()
-      .then(() => {
-        toast("🦄 Wow so easy!", {
-          position: "bottom-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-          transition: Bounce,
-        });
-        console.log("สร้างงานสำเร็จ");
-        onClose();
-      })
-      .catch((err) => {
-        toast.error("เกิดข้อผิดพลาดในการสร้างคำขอ !", {
-          position: "bottom-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-          transition: Bounce,
-        });
+      // append ไฟล์ทั้งหมด
+      files.forEach((file) => formData.append("attachments", file));
+
+      // ส่งผ่าน Redux Thunk
+      await dispatch(createTask(formData)).unwrap();
+
+      toast("🦄 สร้างงานสำเร็จ!", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Bounce,
       });
+      console.log([...formData]);
+      console.log("สร้างงานสำเร็จ");
+      onClose();
+    } catch (err: any) {
+      toast.error("เกิดข้อผิดพลาดในการสร้างคำขอ!", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Bounce,
+      });
+      console.error(err);
+    }
   };
+
   return (
     <Modal
       aria-labelledby="spring-modal-title"
@@ -221,12 +228,12 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 size="small"
               />
             </div>
-            <div className="flex gap-5 mt-2">
+            {/* <div className="flex gap-5 mt-2">
               <FormControl sx={{ width: "100%" }} variant="outlined">
                 <OutlinedInput
                   id="outlined-adornment-weight"
                   endAdornment={
-                    <InputAdornment position="end">เซ็ท</InputAdornment>
+                    <InputAdornment position="end">รายการ</InputAdornment>
                   }
                   aria-describedby="outlined-weight-helper-text"
                   inputProps={{ "aria-label": "weight" }}
@@ -238,7 +245,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                   }
                 />
                 <FormHelperText id="outlined-weight-helper-text">
-                  จำนวนการสั่งซื้อ (QT)*
+                  จำนวนการสั่งซื้อ*
                 </FormHelperText>
               </FormControl>
               <FormControl sx={{ width: "100%" }} variant="outlined">
@@ -252,15 +259,46 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                   }
                   endAdornment={
                     <InputAdornment position="end">ชิ้น</InputAdornment>
-                  }
+                  }s
                   aria-describedby="outlined-weight-helper-text"
                   inputProps={{ "aria-label": "weight" }}
                 />
                 <FormHelperText id="outlined-weight-helper-text">
-                  หน่วยจำนวนสินค้า*
+                  หน่วยจำนวนสินค้าต่อรายการ*
                 </FormHelperText>
               </FormControl>
-            </div>
+            </div> */}
+            <Box>
+              <Typography
+                id="spring-modal-description"
+                className="mb-2 font-semibold flex items-center gap-2"
+              >
+                รายการขึ้นงาน/ไฟล์แนบ{" "}
+                <p className="opacity-50">({subTaskCount.toString()} รายการ)</p>
+              </Typography>
+
+              <div
+                style={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#9ca3af #f3f4f6", // thumb / track (Firefox)
+                }}
+                className="max-h-[180px] overflow-y-auto border border-gray-200 rounded p-4 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+              >
+                {Array.from({ length: subTaskCount }).map((_, idx) => (
+                  <TaskRow key={idx} />
+                ))}
+              </div>
+
+              <div className="w-full flex justify-center items-center mt-2">
+                <button
+                  onClick={() => setSubTaskCount(subTaskCount + 1)}
+                  className="flex gap-1 px-3 py-1 text-[#0079CA] hover:text-[#005a8d] transition-colors items-center"
+                >
+                  เพิ่มรายการใหม่
+                  <Icon icon="ic:round-plus" width="24" height="24" />
+                </button>
+              </div>
+            </Box>
             <FormControl fullWidth>
               <InputLabel id="demo-simple-select-label" size="small">
                 เจ้าหน้าที่ฝ่ายขายที่รับผิดชอบ
@@ -284,19 +322,20 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                       gap: 1,
                     }}
                   >
-                    <div>
+                    <div className="flex gap-2">
                       <img
-                        src={`${import.meta.env.VITE_BASE_URL}/${s.profilePic}`}
+                        src={`${import.meta.env.VITE_BASE_URL}/api/${
+                          s.profilePic
+                        }`}
                         alt="Profile"
                         className="rounded-full w-6 h-6 object-cover"
-                      />
+                      />{" "}
+                      {s.name} {s.surname}
                     </div>
-                    {s.name} {s.surname}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-
             <Autocomplete
               className="mt-5"
               multiple
@@ -313,20 +352,26 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                   size="small"
                 />
               )}
-            />
+            />{" "}
+            <Typography
+              id="spring-modal-description"
+              className=" font-semibold"
+            >
+              รายระเอียดเพิ่มเติม
+            </Typography>
             <TextareaAutosize
               aria-label="empty textarea"
               placeholder="รายละเอียดเพิ่มเติม"
               style={{
                 width: "100%",
-                marginTop: 20,
+                marginTop: 10,
                 minHeight: 100,
                 borderRadius: 8,
                 border: "1px solid #C4C4C4",
                 padding: 10,
               }}
             />
-            <Box
+            {/* <Box
               sx={{
                 border: "2px dashed #C4C4C4",
                 borderRadius: 2,
@@ -334,11 +379,29 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 textAlign: "center",
                 cursor: "pointer",
               }}
+              onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
             >
               ลากไฟล์มาวาง หรือ คลิ๊กเพื่ออัพโหลด
-              <input type="file" className="opacity-0" />
-            </Box>
+              <input
+                type="file"
+                name="attachments"
+                multiple
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  if (e.target.files) {
+                    setFiles(Array.from(e.target.files));
+                    console.log(Array.from(e.target.files));
+                  }
+                }}
+              />
+              <ul>
+                {files.map((file, idx) => (
+                  <li key={idx}>{file.name}</li>
+                ))}
+              </ul>
+            </Box> */}
           </form>
           <Box className="flex justify-end mt-2 gap-2">
             {" "}

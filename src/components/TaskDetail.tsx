@@ -16,7 +16,6 @@ import type { Task } from "../types/task";
 import Divider from "@mui/material/Divider";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import PdfThumbnail from "./PDFThumbnail";
 import PDFThumbnail from "./PDFThumbnail";
 
 interface FadeProps {
@@ -115,15 +114,23 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
           <Divider className="mb-4" />
 
           {/* Status Badge */}
-          <Box className="mb-3">{renderStatusBadge([])}</Box>
+          <Box className="my-3 w-fit">
+            {renderStatusBadge(taskData?.taskType)}
+          </Box>
 
           {/* Title */}
-          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+          <Typography
+            sx={{
+              fontSize: "2rem",
+            }}
+            variant="subtitle1"
+            gutterBottom
+          >
             {taskData?.titleName}
           </Typography>
 
           {/* PO / QT Section */}
-          <Box className="bg-gray-50 rounded-lg p-3 mb-3">
+          <Box className=" rounded-lg p-3 mb-3">
             <Typography variant="body2">
               PO: {taskData?.poNumber || "ไม่ได้ระบุ"}
             </Typography>
@@ -133,7 +140,7 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
           </Box>
 
           {/* Quantity Section */}
-          <Box className="bg-gray-50 rounded-lg p-3 mb-3">
+          <Box className=" rounded-lg p-3 mb-3">
             <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
               จำนวนสินค้า
             </Typography>
@@ -144,19 +151,12 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
           </Box>
 
           {/* Attachments */}
-          <Box className="bg-gray-50 rounded-lg p-3 mb-4">
+          <Box className=" rounded-lg p-3 mb-4">
             <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
               รายระเอียดเพิ่มเติม
             </Typography>
             {taskData?.attachments?.length ? (
-              <ul className="list-disc ml-5">
-                {taskData.attachments.map((file, idx) => (
-                  <li
-                    key={idx}
-                    className="text-sm text-blue-600 cursor-pointer hover:underline"
-                  ></li>
-                ))}
-              </ul>
+              <ul className="list-disc ml-5"></ul>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 ไม่มีรายระเอียดเพิ่มเติม
@@ -178,18 +178,18 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
           {/* Tab Panel: รายละเอียดเพิ่มเติม */}
           {tab === 0 && (
             <Box className="mt-3">
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                ไฟล์แนบ
-              </Typography>
-
-              <div>
+              <div className="flex h-60 gap-2">
                 {/* Implement PDF.js Thumbnail here*/}
-
-                <PDFThumbnail
-                  filename="Ring Gauge"
-                  fileUrl="/TestThumbnail.pdf"
-                  width={120}
-                />
+                {taskData?.attachments.map((file) => (
+                  <div>
+                    {" "}
+                    <PDFThumbnail
+                      filename={file.filename}
+                      fileUrl={`https://one.obomgauge.com/api${file.url}`}
+                      width={120}
+                    />{" "}
+                  </div>
+                ))}
               </div>
             </Box>
           )}
