@@ -187,6 +187,7 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
                       filename={file.fileName}
                       fileUrl={`https://one.obomgauge.com/api${file.fileUrl}`}
                       width={120}
+                      filePath={""}
                     />{" "}
                   </div>
                 ))}

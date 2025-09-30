@@ -21,6 +21,7 @@ import { fetchSale } from "../features/redux/UserSlice";
 import type { IUser } from "../types/task";
 import { Bounce, toast } from "react-toastify";
 import TaskRow from "./TaskRow";
+import DatePicker from "./DatePicker";
 
 interface FadeProps {
   children: React.ReactElement<any>;
@@ -75,7 +76,7 @@ interface DetailModalProps {
 
 export default function DetailModal({ open, onClose }: DetailModalProps) {
   const dispatch = useAppDispatch();
-  const [subTaskCount, setSubTaskCount] = useState(1);
+  const [subTaskCount] = useState(1);
   // const fileInputRef = useRef<HTMLInputElement>(null);
   const { sales } = useAppSelector((state) => state.user);
   const [titleName, setTitleName] = useState("");
@@ -83,11 +84,10 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
   const [companyPrefix, setCompanyPrefix] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [qtNumber, setQtNumber] = useState("");
-
+  const [selectedDate, setSelectedDate] = useState<string>("");
   const [sale, setSale] = useState(""); // user id
   const [description] = useState("");
   const [taskType, setTaskType] = useState<string[]>(["งานใหม่"]);
-  const [files, _] = useState<File[]>([]);
   const [subtasks, setSubTasks] = useState<
     {
       name: string;
@@ -126,6 +126,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
       formData.append("poNumber", poNumber);
       formData.append("qtNumber", qtNumber);
       formData.append("sale", sale);
+      formData.append("dueDate", selectedDate);
       formData.append("description", description || "");
 
       taskType.forEach((t) => formData.append("taskType[]", t));
@@ -207,15 +208,20 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
             สร้างข้อมูลการผลิตไปยังแผนการผลิต
           </Typography>
           <form className="space-y-4 mt-2">
-            <TextField
-              id="outlined-password-input"
-              label="ชื่อรายการ"
-              fullWidth={true}
-              required={true}
-              type="text"
-              size="small"
-              onChange={(e) => setTitleName(e.target.value)}
-            />
+            <div className="flex gap-5">
+              <TextField
+                id="outlined-password-input"
+                label="ชื่อรายการ"
+                required
+                type="text"
+                size="small"
+                className="flex-1"
+                onChange={(e) => setTitleName(e.target.value)}
+              />
+              <div className="flex-1">
+                <DatePicker date={selectedDate} setDate={setSelectedDate} />
+              </div>
+            </div>
             <div className="flex gap-5 mt-5">
               <TextField
                 id="outlined-password-input"

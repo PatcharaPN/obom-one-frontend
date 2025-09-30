@@ -3,6 +3,7 @@ import axiosInstance from "../../contexts/axiosInstance";
 import type { Task, TaskState } from "../../types/task";
 
 const initialState: TaskState = {
+  currentTask: null,
   tasks: [],
   loading: false,
   error: null,
@@ -13,10 +14,19 @@ export const fetchTasks = createAsyncThunk<Task[]>(
   async (_, thunkAPI) => {
     try {
       const res = await axiosInstance.get("/task/getAllTasks");
+      console.log(res.data);
       return res.data;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);
     }
+  }
+);
+
+export const fetchTaskById = createAsyncThunk(
+  "task/fetchById",
+  async (taskId: string) => {
+    const res = await axiosInstance.get(`/task/${taskId}`);
+    return res.data;
   }
 );
 
@@ -63,6 +73,18 @@ const taskSlice = createSlice({
       .addCase(createTask.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(fetchTaskById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTaskById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentTask = action.payload;
+      })
+      .addCase(fetchTaskById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch task";
       });
   },
 });

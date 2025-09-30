@@ -21,6 +21,8 @@ import { useAppDispatch, useAppSelector } from "../../store";
 import { fetchTasks } from "../../features/redux/TaskSlice";
 import TaskDetail from "../../components/TaskDetail";
 import { renderStatusBadge } from "../../components/StatusBadge";
+import { useNavigate } from "react-router-dom";
+import { formatThaiDate } from "../../utils/formatThaiDate";
 
 interface RequestData {
   id: string;
@@ -45,18 +47,20 @@ const inLine: RequestData[] = [
 ];
 
 const HomePage = () => {
+  const naviagate = useNavigate();
   const dispatch = useAppDispatch();
   const { tasks } = useAppSelector((state) => state.task);
   const [selectedPending, setSelectedPending] = useState<string[]>([]);
   const [selectedInLine, setSelectedInLine] = useState<string[]>([]);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(true);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [openPending, setOpenPending] = useState(true);
   const [openInLine, setOpenInLine] = useState(true);
   const [isTaskDetailOpen, setTaskDetailOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTaskId, _] = useState<string | null>(null);
   const pendingTasks = (tasks || []).filter((t) => !t.isApprove);
 
-  const inLineTasks = (tasks || []).filter((t) => !t.isApprove);
+  const inLineTasks = (tasks || []).filter((t) => t.isApprove);
+
   const handleSelectAll = (
     data: RequestData[],
     type: "pending" | "inline",
@@ -84,19 +88,11 @@ const HomePage = () => {
       );
     }
   };
-  function formatThaiDate(dateString: string): string {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("th-TH", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }).format(date);
-  }
 
-  const handleTaskDetail = (taskId: string) => {
-    setSelectedTaskId(taskId);
-    setTaskDetailOpen(true);
-  };
+  // const handleTaskDetail = (taskId: string) => {
+  //   setSelectedTaskId(taskId);
+  //   setTaskDetailOpen(true);
+  // };
   return (
     <div className="grid grid-rows-[280px_1fr] gap-4">
       <div className="flex gap-4 overflow-x-auto">
@@ -164,7 +160,7 @@ const HomePage = () => {
             <TableBody>
               {pendingTasks.map((row) => (
                 <TableRow
-                  onClick={() => handleTaskDetail(row._id as string)}
+                  onClick={() => naviagate(`/Task/${row._id}`)}
                   key={row._id}
                   selected={selectedPending.includes(row._id || "")}
                   className="cursor-pointer hover:bg-blue-400/10 duration-300 transition-all"
@@ -176,15 +172,17 @@ const HomePage = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <p>{row.titleName}</p>
-                      {renderStatusBadge(row.taskType)}
+                    <div className="flex items-center gap-2 w-fit">
+                      <p>{row.titleName}</p> {renderStatusBadge(row.taskType)}
                     </div>
                   </TableCell>
                   <TableCell>{row.companyName}</TableCell>
-                  <TableCell>{row.material}</TableCell>
                   <TableCell>
-                    {/* {formatThaiDate(row.dueDate.toLocaleString())} */}
+                    {" "}
+                    {row.tasks.map((task) => task.material).join(", ")}
+                  </TableCell>
+                  <TableCell>
+                    {formatThaiDate(row.dueDate?.toLocaleString() || "")}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -255,7 +253,7 @@ const HomePage = () => {
             <TableBody>
               {inLineTasks.map((row: any) => (
                 <TableRow
-                  onClick={() => handleTaskDetail(row._id as string)}
+                  onClick={() => naviagate(`/Task/${row._id}`)}
                   key={row._id}
                   selected={selectedInLine.includes(row._id || "")}
                   className="cursor-pointer hover:bg-blue-400/10 duration-300 transition-all"
@@ -267,19 +265,16 @@ const HomePage = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <p>{row.titleName}</p>
-                      {renderStatusBadge(
-                        Array.isArray(row.taskType)
-                          ? row.taskType
-                          : [row.taskType]
-                      )}
+                    <div className="flex items-center gap-2 w-fit">
+                      <p>{row.titleName}</p> {renderStatusBadge(row.taskType)}
                     </div>
                   </TableCell>
                   <TableCell>{row.companyName}</TableCell>
-                  <TableCell>{row.material}</TableCell>
                   <TableCell>
-                    {/* {formatThaiDate(row.dueDate.toLocaleString())} */}
+                    {row.tasks.map((task: any) => task.material).join(", ")}
+                  </TableCell>
+                  <TableCell>
+                    {formatThaiDate(row.dueDate?.toLocaleString() || "")}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

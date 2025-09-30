@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import { Icon } from "@iconify/react";
+import { useNavigate } from "react-router-dom";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
@@ -9,21 +11,26 @@ interface PdfThumbnailProps {
   width?: number;
   height?: number;
   filename: string;
+  filePath: string;
+  material?: string;
 }
 
 const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   fileUrl,
-  width = 120,
-  height = 160,
+  filePath,
+  width = 200,
+  height = 220,
   filename,
+  material,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
 
+  const navigate = useNavigate();
   useEffect(() => {
     const renderPdf = async () => {
       try {
-        const pdf = await pdfjsLib.getDocument(fileUrl).promise;
+        const pdf = await pdfjsLib.getDocument(filePath).promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1 });
 
@@ -74,10 +81,11 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
 
   return (
     <div
-      onClick={() => window.open(fileUrl, "_blank")}
+      onClick={() => navigate(`/print/${fileUrl}`)}
       style={{
-        width: width + 40,
-        height: height + 75,
+        position: "relative",
+        width: width + 30,
+        height: height + 95,
         padding: 8,
         display: "flex",
         flexDirection: "column",
@@ -101,6 +109,9 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
         el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.1)";
       }}
     >
+      <div className="absolute left-2 top-2">
+        <Icon icon="material-icon-theme:pdf" width="40" height="40" />
+      </div>
       {loading && (
         <div style={{ fontSize: 12, color: "#999", marginBottom: 4 }}>
           Loading...
@@ -112,6 +123,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
       />
       <p
         style={{
+          alignSelf: "start",
           marginTop: 6,
           fontSize: 12,
           fontWeight: 500,
@@ -122,6 +134,9 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
       >
         {filename}.PDF
       </p>
+      <div className="self-start text-indigo-900 bg-indigo-900/40 px-3 py-1 rounded-full">
+        {material}
+      </div>
     </div>
   );
 };

@@ -21,10 +21,17 @@ export interface Task {
   material?: string;
   quantity?: number;
   productUnit?: number;
+  tasks: SubTask[];
   dueDate?: Date;
   isApprove: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+export interface SubTask {
+  name: string;
+  material: string;
+  quantity: number;
+  attachments: string[];
 }
 export interface IUser {
   _id?: string;
@@ -41,6 +48,7 @@ export interface IUser {
   profilePic?: string;
 }
 export interface TaskState {
+  currentTask: Task | null;
   tasks: Task[];
   loading: boolean;
   error: string | null;

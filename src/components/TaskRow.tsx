@@ -60,7 +60,12 @@ const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
           }
         />
         <div className="flex-[0.5] flex items-center justify-evenly bg-gray-100 px-2 text-sm">
-          <button onClick={() => onDelete(index)}>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete(index);
+            }}
+          >
             <Icon icon="tabler:trash" color="#FF5858" width="17" height="17" />
           </button>
           <button>
