@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import AuthReducer from "./features/redux/AuthSlice";
 import TaskReducer from "./features/redux/TaskSlice";
 import UserReducer from "./features/redux/UserSlice";
+import PrintReducer from "./features/redux/PrintSlice";
 import {
   useDispatch,
   useSelector,
@@ -13,6 +14,7 @@ const store = configureStore({
     auth: AuthReducer,
     task: TaskReducer,
     user: UserReducer,
+    print: PrintReducer,
   },
 });
 

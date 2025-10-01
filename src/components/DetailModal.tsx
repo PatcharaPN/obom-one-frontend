@@ -72,12 +72,16 @@ interface DetailModalProps {
   open: boolean;
   onClose: () => void;
   children?: React.ReactNode;
+  taskDataToEdit?: any;
 }
 
-export default function DetailModal({ open, onClose }: DetailModalProps) {
+export default function DetailModal({
+  open,
+  onClose,
+  taskDataToEdit,
+}: DetailModalProps) {
   const dispatch = useAppDispatch();
   const [subTaskCount] = useState(1);
-  // const fileInputRef = useRef<HTMLInputElement>(null);
   const { sales } = useAppSelector((state) => state.user);
   const [titleName, setTitleName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -86,7 +90,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
   const [qtNumber, setQtNumber] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [sale, setSale] = useState(""); // user id
-  const [description] = useState("");
+  const [description, setDescription] = useState("");
   const [taskType, setTaskType] = useState<string[]>(["งานใหม่"]);
   const [subtasks, setSubTasks] = useState<
     {
@@ -96,11 +100,33 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
       attachments: File[];
     }[]
   >([{ name: "", material: "", quantity: "", attachments: [] }]);
-
   useEffect(() => {
     dispatch(fetchSale());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (taskDataToEdit) {
+      setTitleName(taskDataToEdit.titleName || "");
+      setCompanyName(taskDataToEdit.companyName || "");
+      setCompanyPrefix(taskDataToEdit.companyPrefix || "");
+      setPoNumber(taskDataToEdit.poNumber || "");
+      setQtNumber(taskDataToEdit.qtNumber || "");
+      setSelectedDate(taskDataToEdit.dueDate || "");
+      setSale(taskDataToEdit.sale?._id || "");
+      setDescription(taskDataToEdit.description || "");
+      setTaskType(taskDataToEdit.taskType || ["งานใหม่"]);
+      setSubTasks(
+        taskDataToEdit.tasks?.length
+          ? taskDataToEdit.tasks.map((t: any) => ({
+              name: t.name,
+              material: t.material,
+              quantity: t.quantity,
+              attachments: [],
+            }))
+          : [{ name: "", material: "", quantity: "", attachments: [] }]
+      );
+    }
+  }, [taskDataToEdit]);
   const handleTaskChange = (index: number, newData: any) => {
     setSubTasks((prev) => {
       const newTasks = [...prev];
@@ -216,6 +242,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 type="text"
                 size="small"
                 className="flex-1"
+                value={titleName}
                 onChange={(e) => setTitleName(e.target.value)}
               />
               <div className="flex-1">
@@ -229,6 +256,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 fullWidth={true}
                 required={true}
                 type="text"
+                value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 size="small"
               />
@@ -237,6 +265,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 label="ชื่อย่อ"
                 fullWidth={true}
                 required={true}
+                value={companyPrefix}
                 onChange={(e) => setCompanyPrefix(e.target.value)}
                 type="text"
                 size="small"
@@ -249,6 +278,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 fullWidth={true}
                 required={true}
                 type="jobName"
+                value={poNumber}
                 onChange={(e) => setPoNumber(e.target.value)}
                 size="small"
               />
@@ -257,6 +287,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 label="เลขใบเสนอราคา (QT)"
                 fullWidth={true}
                 required={true}
+                value={qtNumber}
                 onChange={(e) => setQtNumber(e.target.value)}
                 type="jobName"
                 size="small"
@@ -307,7 +338,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
                 id="spring-modal-description"
                 className="mb-2 font-semibold flex items-center gap-2"
               >
-                รายการขึ้นงาน/ไฟล์แนบ{" "}
+                รายการขึ้นงาน/ไฟล์แนบ
                 <p className="opacity-50">({subTaskCount.toString()} รายการ)</p>
               </Typography>
 
@@ -407,6 +438,7 @@ export default function DetailModal({ open, onClose }: DetailModalProps) {
             <TextareaAutosize
               aria-label="empty textarea"
               placeholder="รายละเอียดเพิ่มเติม"
+              value={description}
               style={{
                 width: "100%",
                 marginTop: 10,

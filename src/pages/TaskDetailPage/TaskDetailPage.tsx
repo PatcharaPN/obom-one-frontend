@@ -13,11 +13,18 @@ const TaskDetailPage = () => {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [isSuccess] = useState(false);
+  const approveDate = new Date().toISOString();
   const { currentTask, loading } = useAppSelector<any>((state) => state.task);
-
+  const printedFiles = useAppSelector((state) => state.print);
   const [successOpen, setSuccessOpen] = useState(false);
-
+  const allPrinted = currentTask?.tasks
+    ? currentTask.tasks.every((t: any) => {
+        const files = Array.isArray(t.attachments)
+          ? t.attachments
+          : [t.attachments];
+        return files.every((file: string) => printedFiles[file]);
+      })
+    : false;
   useEffect(() => {
     if (taskId) dispatch(fetchTaskById(taskId));
   }, [taskId, dispatch]);
@@ -25,7 +32,10 @@ const TaskDetailPage = () => {
   const handleApprove = async () => {
     try {
       const res = await axios.put(
-        `${import.meta.env.VITE_BASE_URL}/api/task/${taskId}/approve`
+        `${import.meta.env.VITE_BASE_URL}/api/task/${taskId}/approve`,
+        {
+          approveDate: approveDate,
+        }
       );
 
       if (res.status !== 200) throw new Error("Approve failed");
@@ -113,16 +123,15 @@ const TaskDetailPage = () => {
 
         <div className="grid h-full w-full grid-rows-[auto_1fr] gap-4">
           <div className="flex justify-end">
-            <button
-              disabled={isSuccess ? false : true}
-              onClick={handleApprove}
-              className={`${
-                isSuccess ? "bg-green-600" : "bg-gray-500/40"
-              } hover:brightness-70 transition-colors duration-300 text-white px-6 py-3 rounded-lg flex items-center gap-2 font-medium`}
-            >
-              <Icon icon="simple-line-icons:check" width="20" height="20" />
-              อนุมัติขึ้นงาน
-            </button>
+            {currentTask.isApprove === false && allPrinted && (
+              <button
+                onClick={handleApprove}
+                className="bg-green-600 hover:brightness-70 transition-colors duration-300 text-white px-6 py-3 rounded-lg flex items-center gap-2 font-medium"
+              >
+                <Icon icon="simple-line-icons:check" width="20" height="20" />
+                อนุมัติขึ้นงาน
+              </button>
+            )}
           </div>
 
           <div className="w-full border border-black/10 rounded-xl p-4">

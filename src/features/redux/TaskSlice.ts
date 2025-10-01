@@ -5,6 +5,7 @@ import type { Task, TaskState } from "../../types/task";
 const initialState: TaskState = {
   currentTask: null,
   tasks: [],
+  summaryTasks: [],
   loading: false,
   error: null,
 };
@@ -41,6 +42,21 @@ export const createTask = createAsyncThunk(
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message);
     }
+  }
+);
+
+export const fetchAllTask = createAsyncThunk<Task[]>(
+  "task/fetchAllTasks",
+  async () => {
+    const res = await axiosInstance.get("/task/tasks");
+    return res.data;
+  }
+);
+export const updateTask = createAsyncThunk(
+  "task/updateTask",
+  async ({ id, data }: { id: string; data: FormData }) => {
+    const res = await axiosInstance.put(`/update/${id}`, data);
+    return res.data;
   }
 );
 
@@ -85,6 +101,18 @@ const taskSlice = createSlice({
       .addCase(fetchTaskById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch task";
+      })
+      .addCase(fetchAllTask.fulfilled, (state, action) => {
+        state.loading = false;
+        state.summaryTasks = action.payload;
+      })
+      .addCase(fetchAllTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch task";
+      })
+      .addCase(fetchAllTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       });
   },
 });

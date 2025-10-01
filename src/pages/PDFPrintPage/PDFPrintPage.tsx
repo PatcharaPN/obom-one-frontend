@@ -3,6 +3,8 @@ import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import * as pdfjsLib from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
+import { useAppDispatch } from "../../store";
+import { markPrinted } from "../../features/redux/PrintSlice";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
@@ -13,6 +15,7 @@ interface PDFPrintPageProps {
 
 const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rotation, setRotation] = useState(0);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -27,6 +30,7 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
     };
     loadPdf();
   }, [fileUrl]);
+
   useEffect(() => {
     if (!pdfDoc) return;
 
@@ -59,12 +63,10 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
       const context = canvas.getContext("2d");
       if (!context) return;
 
-      // ขนาด canvas ตาม viewport + scale
       let viewport = page.getViewport({ scale });
       let width = viewport.width;
       let height = viewport.height;
 
-      // สลับ width/height ถ้า rotate 90/270
       if (rotation === 90 || rotation === 270) {
         [width, height] = [height, width];
       }
@@ -72,12 +74,11 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
       canvas.height = height;
 
       context.save();
-      // translate กลาง canvas
+
       context.translate(width / 2, height / 2);
       context.rotate((rotation * Math.PI) / 180);
       context.translate(-viewport.width / 2, -viewport.height / 2);
 
-      // render page
       await page.render({ canvasContext: context, viewport }).promise;
       context.restore();
     };
@@ -190,8 +191,9 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
 
       html += `<div class="page"><img src="${canvas.toDataURL()}" /></div>`;
     }
-
+    if (fileUrl) dispatch(markPrinted(fileUrl));
     printWindow.document.write(html);
+    navigate(-1);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);

@@ -1,4 +1,3 @@
-import DashboardCard from "../../components/DashboardCard";
 import Divider from "../../components/Divider";
 import PrimaryButton from "../../components/PrimaryButton";
 import { Searchbar } from "../../components/Searchbar";
@@ -18,7 +17,7 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Collapse from "@mui/material/Collapse";
 import { useAppDispatch, useAppSelector } from "../../store";
-import { fetchTasks } from "../../features/redux/TaskSlice";
+import { fetchTaskById, fetchTasks } from "../../features/redux/TaskSlice";
 import TaskDetail from "../../components/TaskDetail";
 import { renderStatusBadge } from "../../components/StatusBadge";
 import { useNavigate } from "react-router-dom";
@@ -49,6 +48,7 @@ const inLine: RequestData[] = [
 const HomePage = () => {
   const naviagate = useNavigate();
   const dispatch = useAppDispatch();
+  const { currentTask } = useAppSelector((state) => state.task);
   const { tasks } = useAppSelector((state) => state.task);
   const [selectedPending, setSelectedPending] = useState<string[]>([]);
   const [selectedInLine, setSelectedInLine] = useState<string[]>([]);
@@ -58,6 +58,7 @@ const HomePage = () => {
   const [isTaskDetailOpen, setTaskDetailOpen] = useState(false);
   const [selectedTaskId, _] = useState<string | null>(null);
   const pendingTasks = (tasks || []).filter((t) => !t.isApprove);
+  const [taskDataToEdit, setTaskDataToEdit] = useState<any>(null);
 
   const inLineTasks = (tasks || []).filter((t) => t.isApprove);
 
@@ -76,7 +77,11 @@ const HomePage = () => {
   useEffect(() => {
     dispatch(fetchTasks());
   }, [dispatch]);
-
+  useEffect(() => {
+    if (currentTask && isDetailModalOpen) {
+      setTaskDataToEdit(currentTask);
+    }
+  }, [currentTask, isDetailModalOpen]);
   const handleSelectRow = (id: string, type: "pending" | "inline") => {
     if (type === "pending") {
       setSelectedPending((prev) =>
@@ -94,16 +99,8 @@ const HomePage = () => {
   //   setTaskDetailOpen(true);
   // };
   return (
-    <div className="grid grid-rows-[280px_1fr] gap-4">
-      <div className="flex gap-4 overflow-x-auto">
-        <DashboardCard count={pendingTasks.length} type={"คำขอใหม่รออนุมัติ"} />
-        <DashboardCard
-          count={inLineTasks.length}
-          type={"ขึ้นงานทั้งหมดวันนี้"}
-        />
-        <DashboardCard count={724} type={"ขึ้นงานทั้งหมดสัปดาห์นี้"} />
-        <DashboardCard count={1724} type={"ขึ้นงานทั้งหมดเดือนนี้"} />
-      </div>
+    <div className="grid grid-rows-[200px_1fr] gap-4">
+      <div className="flex gap-4 overflow-x-auto"></div>
       <Divider />
       <div className="flex justify-between items-center">
         <Box flex={1} display="flex" gap={2} alignItems="center">
@@ -155,6 +152,7 @@ const HomePage = () => {
                 <TableCell>กำหนดส่ง</TableCell>
                 <TableCell>ผู้ดูแล</TableCell>
                 <TableCell>สถานะ</TableCell>
+                <TableCell>จัดการ</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -204,6 +202,20 @@ const HomePage = () => {
                     <span className="px-2 py-1 bg-[#FFF4E5] text-[#FF8C00] rounded-full text-sm">
                       รอรอการอนุมัติ
                     </span>
+                  </TableCell>{" "}
+                  <TableCell>
+                    <button
+                      disabled
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDetailModalOpen(true);
+                        setTaskDataToEdit(null); // reset ก่อน
+                        dispatch(fetchTaskById(row._id || "")); // fetch task จาก server
+                      }}
+                      className="text-blue-500/70"
+                    >
+                      แก้ไข
+                    </button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -303,18 +315,22 @@ const HomePage = () => {
           </Table>
         </TableContainer>
       </Collapse>
-      {/* Detail Modal */}
-      {isDetailModalOpen && (
-        <DetailModal
-          open={isDetailModalOpen}
-          onClose={() => setIsDetailModalOpen(false)}
-        />
-      )}
+
       <TaskDetail
         open={isTaskDetailOpen}
         onClose={() => setTaskDetailOpen(false)}
         taskId={selectedTaskId}
       />
+      {isDetailModalOpen && (
+        <DetailModal
+          open={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setTaskDataToEdit(null);
+          }}
+          taskDataToEdit={taskDataToEdit}
+        />
+      )}
     </div>
   );
 };

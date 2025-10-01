@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
+import { useAppDispatch } from "../store";
+import { markPrinted } from "../features/redux/PrintSlice";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
@@ -24,8 +26,10 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   material,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
 
+  // const printedFiles = useAppSelector((state) => state.print);
   const navigate = useNavigate();
   useEffect(() => {
     const renderPdf = async () => {
@@ -71,6 +75,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
         ctx.restore();
 
         setLoading(false);
+        dispatch(markPrinted(fileUrl));
       } catch (err) {
         console.error("Error rendering PDF:", err);
       }

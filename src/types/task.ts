@@ -13,17 +13,18 @@ export interface Task {
   companyPrefix: string;
   poNumber?: string;
   qtNumber?: string;
-  sale: IUser; // user object
+  sale: IUser;
   description?: string;
   taskType: ("งานใหม่" | "งานแก้ไข" | "งานด่วน" | "งานเสีย")[];
   customTags?: string[];
-  attachments: Attachment[]; // array ของไฟล์
+  attachments: Attachment[];
   material?: string;
   quantity?: number;
   productUnit?: number;
   tasks: SubTask[];
   dueDate?: Date;
   isApprove: boolean;
+  approveDate: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -51,6 +52,7 @@ export interface TaskState {
   currentTask: Task | null;
   tasks: Task[];
   loading: boolean;
+  summaryTasks: Task[];
   error: string | null;
 }
 
