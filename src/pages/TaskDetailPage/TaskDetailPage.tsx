@@ -14,7 +14,7 @@ const TaskDetailPage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [isSuccess] = useState(false);
-  const { currentTask, loading } = useAppSelector((state) => state.task);
+  const { currentTask, loading } = useAppSelector<any>((state) => state.task);
 
   const [successOpen, setSuccessOpen] = useState(false);
 
@@ -142,7 +142,7 @@ const TaskDetailPage = () => {
       {/* Scrollable Content */}
       <div className="p-6 bg-gray-200 overflow-auto">
         <p className="mt-4 text-gray-600">
-          {currentTask.tasks.map((t, idx) => (
+          {currentTask.tasks.map((t: any, idx: any) => (
             <PdfThumbnail
               key={idx}
               filePath={`${import.meta.env.VITE_BASE_URL}/api/uploads/task/${
