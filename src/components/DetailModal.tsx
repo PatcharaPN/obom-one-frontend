@@ -220,7 +220,7 @@ export default function DetailModal({
             variant="h6"
             component="h2"
           >
-            เพิ่มคำขอผลิตงาน
+            {taskDataToEdit ? "แก้ไขคำขอ" : "เพิ่มคำขอผลิตงาน"}
             <span
               className="cursor-pointer"
               onClick={() => {

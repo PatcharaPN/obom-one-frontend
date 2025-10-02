@@ -21,6 +21,7 @@ import Divider from "../../components/Divider";
 import { formatThaiDate } from "../../utils/formatThaiDate";
 import { renderStatusBadge } from "../../components/StatusBadge";
 import { useNavigate } from "react-router-dom";
+import { Icon } from "@iconify/react";
 
 const getLocalDayStr = (date: Date) => {
   return toZonedTime(date, "Asia/Bangkok").toLocaleDateString("en-CA");
@@ -31,7 +32,7 @@ const StatusTrackingPage = () => {
   const tasks = useAppSelector((state) => state.task.summaryTasks);
   const [tasksByDay, setTasksByDay] = useState<{ [date: string]: any[] }>({});
   const [openDays, setOpenDays] = useState<{ [date: string]: boolean }>({});
-  const todayStr = getLocalDayStr(new Date()); // ใช้ helper
+  const todayStr = getLocalDayStr(new Date());
   const naviagate = useNavigate();
   useEffect(() => {
     if (!tasks) return;
@@ -54,7 +55,8 @@ const StatusTrackingPage = () => {
   useEffect(() => {
     dispatch(fetchAllTask());
   }, [dispatch]);
-  const todayCount = tasksByDay[todayStr]?.filter((t) => t.isApprove).length;
+  const todayCount =
+    tasksByDay[todayStr]?.filter((t) => t.isApprove).length || 0;
 
   const weekCount = Object.entries(tasksByDay).reduce((acc, [day, arr]) => {
     const d = new Date(day);
@@ -96,8 +98,11 @@ const StatusTrackingPage = () => {
         <DashboardCard count={monthCount} type={"ขึ้นงานทั้งหมดเดือนนี้"} />
       </div>
       <Divider />
-      <div className="flex gap-4 overflow-x-auto py-10 text-2xl">
-        การขึ้นงาน
+      <div className="flex justify-between px-2 gap-4 overflow-x-auto py-10 text-2xl">
+        <p>การขึ้นงาน</p>
+        <button className="flex gap-2 items-center cursor-pointer hover:bg-amber-700 transition-all hover:text-white border border-amber-600 rounded-xl p-2 text-lg bg-amber-400/20 text-amber-700">
+          <Icon icon="pajamas:export" width="16" height="16" /> ส่งออก
+        </button>
       </div>
       <div className="flex flex-col gap-4">
         {Object.entries(tasksByDay)
@@ -105,7 +110,7 @@ const StatusTrackingPage = () => {
           .map(([day, dayTasks]) => {
             const approvedTasks = dayTasks.filter((t) => t.isApprove);
             if (approvedTasks.length === 0) return null;
-
+            console.log(openDays[day]);
             return (
               <div key={day} className="flex flex-col gap-2">
                 <div

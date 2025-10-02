@@ -13,7 +13,7 @@ export const menuItems = [
 ];
 
 export const subMenuItems = [
-  { key: "home", label: "รายการคำขอ", icon: "quill:paper", path: "/home" },
+  { key: "home", label: "รายการคำขอ", icon: "quill:paper", path: "/" },
   {
     key: "status-tracking",
     label: "เช็คสถานะ",

@@ -77,6 +77,7 @@ const HomePage = () => {
   useEffect(() => {
     dispatch(fetchTasks());
   }, [dispatch]);
+
   useEffect(() => {
     if (currentTask && isDetailModalOpen) {
       setTaskDataToEdit(currentTask);
@@ -108,7 +109,10 @@ const HomePage = () => {
             label={"สร้างคำขอ"}
             variant="primary"
             icon="mdi:plus"
-            onClick={() => setIsDetailModalOpen(!isDetailModalOpen)}
+            onClick={() => {
+              setTaskDataToEdit(null);
+              setIsDetailModalOpen(true);
+            }}
           />
           <PrimaryButton
             label={"ฉบับร่าง"}
@@ -326,7 +330,6 @@ const HomePage = () => {
           open={isDetailModalOpen}
           onClose={() => {
             setIsDetailModalOpen(false);
-            setTaskDataToEdit(null);
           }}
           taskDataToEdit={taskDataToEdit}
         />

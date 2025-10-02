@@ -1,11 +1,10 @@
-export interface Attachment {
-  _id?: string;
-  fileName: string;
-  fileUrl: string;
-  fileType?: string;
-  createdAt?: string;
+interface Attachment {
+  _id: string;
+  originalName: string;
+  savedName: string;
+  path: string;
+  uploadedAt: Date;
 }
-
 export interface Task {
   _id?: string;
   titleName: string;
@@ -32,7 +31,7 @@ export interface SubTask {
   name: string;
   material: string;
   quantity: number;
-  attachments: string[];
+  attachments: Attachment[];
 }
 export interface IUser {
   _id?: string;

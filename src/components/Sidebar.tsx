@@ -26,7 +26,7 @@ export default function Sidebar({
       }`}
     >
       <button
-        className="rounded-full absolute top-1/2 -right-4 p-2 w-10 bg-[#026DB5] cursor-pointer hover:bg-[#004674] transform -translate-y-1/2"
+        className="rounded-full z-10 absolute top-1/2 right-2 p-2 w-10 bg-[#026DB5] cursor-pointer hover:bg-[#004674] transform -translate-y-1/2"
         onClick={toggleCollapse}
       >
         {isCollapsed ? "→" : "←"}

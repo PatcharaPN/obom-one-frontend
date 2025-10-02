@@ -8,27 +8,26 @@ import { formatThaiDate } from "../../utils/formatThaiDate";
 import PdfThumbnail from "../../components/PDFThumbnail";
 import SuccessModal from "../../components/SuccessPopup";
 import axios from "axios";
+import type { TaskState } from "../../types/task";
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const approveDate = new Date().toISOString();
-  const { currentTask, loading } = useAppSelector<any>((state) => state.task);
-  const printedFiles = useAppSelector((state) => state.print);
+  const { currentTask, loading } = useAppSelector<TaskState>(
+    (state) => state.task
+  );
+  const [checkPrint, setCheckPrint] = useState<{ [key: string]: boolean }>({});
   const [successOpen, setSuccessOpen] = useState(false);
-  const allPrinted = currentTask?.tasks
-    ? currentTask.tasks.every((t: any) => {
-        const files = Array.isArray(t.attachments)
-          ? t.attachments
-          : [t.attachments];
-        return files.every((file: string) => printedFiles[file]);
-      })
-    : false;
+
   useEffect(() => {
     if (taskId) dispatch(fetchTaskById(taskId));
   }, [taskId, dispatch]);
-
+  const allPrinted =
+    currentTask?.tasks?.every((t) =>
+      t.attachments?.every((file) => checkPrint[file.path])
+    ) ?? false;
   const handleApprove = async () => {
     try {
       const res = await axios.put(
@@ -50,7 +49,9 @@ const TaskDetailPage = () => {
       alert("เกิดข้อผิดพลาดในการอนุมัติ");
     }
   };
-
+  const handleFilePrinted = (filename: string) => {
+    setCheckPrint((prev) => ({ ...prev, [filename]: true }));
+  };
   if (loading || !currentTask) return <div>Loading...</div>;
   return (
     <div className="grid grid-rows-[350px_1fr] h-full">
@@ -150,18 +151,25 @@ const TaskDetailPage = () => {
 
       {/* Scrollable Content */}
       <div className="p-6 bg-gray-200 overflow-auto">
-        <p className="mt-4 text-gray-600">
-          {currentTask.tasks.map((t: any, idx: any) => (
-            <PdfThumbnail
-              key={idx}
-              filePath={`${import.meta.env.VITE_BASE_URL}/api/uploads/task/${
-                t.attachments
-              }`}
-              fileUrl={t.attachments.toString()}
-              filename={t.attachments.toString()}
-              material={t.material}
-            />
-          ))}
+        <p className="mt-4 text-gray-600 flex gap-5 items-center">
+          {currentTask.tasks?.map((subtask, sIdx) =>
+            subtask.attachments?.map((file, idx) => {
+              console.log(
+                `Rendering PdfThumbnail - Subtask ${sIdx}, Attachment ${idx}:`,
+                file
+              );
+              return (
+                <PdfThumbnail
+                  key={`${sIdx}-${idx}`}
+                  filePath={`${import.meta.env.VITE_BASE_URL}/api${file.path}`}
+                  fileUrl={`${import.meta.env.VITE_BASE_URL}/api${file.path}`}
+                  filename={file.originalName}
+                  material={subtask.material}
+                  onPrint={() => handleFilePrinted(file.path)}
+                />
+              );
+            })
+          )}
         </p>
       </div>
 

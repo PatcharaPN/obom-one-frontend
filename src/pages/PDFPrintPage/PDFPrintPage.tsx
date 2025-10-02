@@ -22,6 +22,35 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
   const [pageNum, setPageNum] = useState(1);
   const [scale, setScale] = useState(1);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setStartY(e.pageY - containerRef.current.offsetTop);
+    setScrollLeft(containerRef.current.scrollLeft);
+    setScrollTop(containerRef.current.scrollTop);
+  };
+
+  const onMouseLeave = () => setIsDragging(false);
+  const onMouseUp = () => setIsDragging(false);
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const y = e.pageY - containerRef.current.offsetTop;
+    const walkX = x - startX;
+    const walkY = y - startY;
+    containerRef.current.scrollLeft = scrollLeft - walkX;
+    containerRef.current.scrollTop = scrollTop - walkY;
+  };
   useEffect(() => {
     const loadPdf = async () => {
       const loadingTask = pdfjsLib.getDocument(fileUrl);
@@ -265,32 +294,30 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setScale((prev) => prev + 0.25)}
-            className="px-3 py-1 border rounded hover:bg-gray-100"
+            className="px-3 py-1 rounded hover:bg-gray-100"
           >
             <Icon icon="mynaui:plus-solid" width="20" height="20" />
           </button>
           <span className="w-12 text-center">{Math.round(scale * 100)}%</span>
           <button
             onClick={() => setScale((prev) => Math.max(prev - 0.25, 0.25))}
-            className="px-3 py-1 border rounded hover:bg-gray-100"
+            className="px-3 py-1 rounded hover:bg-gray-100"
           >
             <Icon icon="ic:round-minus" width="20" height="20" />
           </button>{" "}
           <div className="flex gap-2">
-            {/* หมุนตามเข็มนาฬิกา */}
             <button
               onClick={() => setRotation((prev) => (prev + 90) % 360)}
               title="Rotate Clockwise"
-              className="w-10 h-10 flex items-center justify-center bg-white border rounded-full shadow hover:bg-gray-100 transition-colors cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <Icon icon="mdi:rotate-right" width="20" height="20" />
             </button>
 
-            {/* หมุนทวนเข็ม */}
             <button
               onClick={() => setRotation((prev) => (prev + 270) % 360)}
               title="Rotate Counter-Clockwise"
-              className="w-10 h-10 flex items-center justify-center bg-white border rounded-full shadow hover:bg-gray-100 transition-colors cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <Icon icon="mdi:rotate-left" width="20" height="20" />
             </button>
@@ -327,14 +354,12 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
         </button>
       </div>
 
-      {/* Main Layout */}
       <div className="flex h-[84vh] gap-4">
-        {/* Left Sidebar */}
-        <div className="w-48 bg-white border rounded gap-5 p-2 h-full overflow-auto flex flex-col">
+        <div className="w-48 bg-white rounded gap-5 p-2 h-full overflow-auto flex flex-col">
           {thumbnails.map((src, i) => (
             <div
               key={i}
-              className={`cursor-pointer border rounded p-1 text-center flex flex-col items-center ${
+              className={`cursor-pointer rounded p-1 text-center flex flex-col items-center ${
                 pageNum === i + 1 ? "bg-blue-100" : ""
               }`}
               onClick={() => setPageNum(i + 1)}
@@ -349,24 +374,16 @@ const PDFPrintPage: React.FC<PDFPrintPageProps> = ({ fileUrl }) => {
           ))}
         </div>
 
-        {/* Canvas */}
-        <div className="flex-1 flex items-center justify-center bg-white border rounded overflow-auto p-4 min-h-0">
-          <canvas
-            ref={canvasRef}
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              objectFit: "contain",
-            }}
-          />
+        <div
+          ref={containerRef}
+          className="flex-1 flex items-center justify-center bg-white rounded overflow-auto p-4 min-h-0 cursor-grab"
+          onMouseDown={onMouseDown}
+          onMouseUp={onMouseUp}
+          onMouseMove={onMouseMove}
+          onMouseLeave={onMouseLeave}
+        >
+          <canvas ref={canvasRef} />
         </div>
-
-        {/* Right Sidebar */}
-        {/* <div className="w-48 bg-white border rounded p-2 h-full overflow-auto">
-          <p className="font-semibold mb-2">Document Info</p>
-          <p>Total Pages: {pdfDoc?.numPages || 0}</p>
-          <p>Current Zoom: {Math.round(scale * 100)}%</p>
-        </div> */}
       </div>
     </div>
   );

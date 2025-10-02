@@ -184,10 +184,13 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
                   <div>
                     {" "}
                     <PDFThumbnail
-                      filename={file.fileName}
-                      fileUrl={`https://one.obomgauge.com/api${file.fileUrl}`}
+                      filename={file.originalName}
+                      fileUrl={`https://one.obomgauge.com/api${file.path}`}
                       width={120}
                       filePath={""}
+                      onPrint={function (filename: string): void {
+                        throw new Error("Function not implemented.");
+                      }}
                     />{" "}
                   </div>
                 ))}

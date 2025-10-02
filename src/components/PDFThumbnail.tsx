@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch } from "../store";
-import { markPrinted } from "../features/redux/PrintSlice";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
@@ -15,52 +13,47 @@ interface PdfThumbnailProps {
   filename: string;
   filePath: string;
   material?: string;
+  onPrint: (filename: string) => void;
 }
 
 const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   fileUrl,
-  filePath,
   width = 200,
   height = 220,
   filename,
   material,
+  onPrint,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
-
-  // const printedFiles = useAppSelector((state) => state.print);
+  const [isPrinted, setPrinted] = useState(false); // track state ปริ้นต์
   const navigate = useNavigate();
+
   useEffect(() => {
     const renderPdf = async () => {
       try {
-        const pdf = await pdfjsLib.getDocument(filePath).promise;
+        const pdf = await pdfjsLib.getDocument(fileUrl).promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1 });
 
         const canvas = canvasRef.current;
         if (!canvas) return;
-
         const ctx = canvas.getContext("2d")!;
         const dpr = window.devicePixelRatio || 1;
 
-        // ตั้งค่า canvas ให้รองรับ HiDPI
         canvas.width = width * dpr;
         canvas.height = height * dpr;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
 
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // คำนวณ scale ตาม canvas pixel
         const scale = Math.min(
           canvas.width / viewport.width,
           canvas.height / viewport.height
         );
         const scaledViewport = page.getViewport({ scale });
-
-        // คำนวณ offset ให้ตรงกลาง
         const offsetX = (canvas.width - scaledViewport.width) / 2;
         const offsetY = (canvas.height - scaledViewport.height) / 2;
 
@@ -73,9 +66,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
         }).promise;
 
         ctx.restore();
-
         setLoading(false);
-        dispatch(markPrinted(fileUrl));
       } catch (err) {
         console.error("Error rendering PDF:", err);
       }
@@ -83,25 +74,31 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
 
     renderPdf();
   }, [fileUrl, width, height]);
+  console.log(fileUrl);
+
+  const handlePrint = () => {
+    window.open(fileUrl, "_blank");
+    setPrinted(true);
+    onPrint(fileUrl);
+  };
 
   return (
     <div
-      onClick={() => navigate(`/print/${fileUrl}`)}
       style={{
         position: "relative",
         width: width + 30,
-        height: height + 95,
-        padding: 8,
+        height: height + 120, // ปรับให้มีพื้นที่สำหรับชื่อไฟล์ + material + ปุ่ม
+        padding: 10,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         border: "1px solid #e0e0e0",
-        borderRadius: 8,
+        borderRadius: 12,
         boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
         textAlign: "center",
         backgroundColor: "#fff",
-        transition: "transform 0.2s, box-shadow 0.2s",
         cursor: "pointer",
+        transition: "transform 0.2s, box-shadow 0.2s",
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget;
@@ -114,33 +111,98 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
         el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.1)";
       }}
     >
+      {/* PDF Icon overlay */}
       <div className="absolute left-2 top-2">
-        <Icon icon="material-icon-theme:pdf" width="40" height="40" />
+        <Icon icon="material-icon-theme:pdf" width="32" height="32" />
       </div>
+
+      {/* Loading */}
       {loading && (
         <div style={{ fontSize: 12, color: "#999", marginBottom: 4 }}>
           Loading...
         </div>
       )}
+
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
-        style={{ borderRadius: 4, display: "block", margin: "0 auto" }}
+        style={{
+          borderRadius: 6,
+          display: "block",
+          marginBottom: 6,
+          width: "100%",
+          height: height,
+          objectFit: "contain",
+          backgroundColor: "#f5f5f5",
+        }}
       />
+
+      {/* Filename */}
       <p
         style={{
-          alignSelf: "start",
-          marginTop: 6,
+          width: "100%",
+          margin: 0,
           fontSize: 12,
           fontWeight: 500,
+          whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
         }}
-        title={filename + ".PDF"}
+        title={filename}
       >
-        {filename}.PDF
+        {filename}
       </p>
-      <div className="self-start text-indigo-900 bg-indigo-900/40 px-3 py-1 rounded-full">
-        {material}
+
+      {/* Material badge */}
+      {material && (
+        <div
+          style={{
+            marginTop: 4,
+            padding: "2px 6px",
+            fontSize: 10,
+            borderRadius: 8,
+            backgroundColor: "#e0f2ff",
+            color: "#0369a1",
+            width: "fit-content",
+            maxWidth: "100%",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          title={material}
+        >
+          {material}
+        </div>
+      )}
+
+      {/* Print button */}
+      <div
+        style={{
+          marginTop: "auto",
+          width: "100%",
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
+      >
+        <button
+          onClick={handlePrint}
+          disabled={isPrinted}
+          style={{
+            marginTop: 8,
+            padding: "4px 10px",
+            borderRadius: 6,
+            backgroundColor: isPrinted ? "#ccc" : "#3b82f6",
+            color: "#fff",
+            fontSize: 12,
+            cursor: isPrinted ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <Icon icon="mingcute:print-line" width={18} height={18} />
+          {isPrinted ? "ปริ้นต์แล้ว" : "ปริ้นต์"}
+        </button>
       </div>
     </div>
   );
