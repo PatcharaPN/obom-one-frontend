@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import { Icon } from "@iconify/react";
-import { useNavigate } from "react-router-dom";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
@@ -27,7 +26,6 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
   const [isPrinted, setPrinted] = useState(false); // track state ปริ้นต์
-  const navigate = useNavigate();
 
   useEffect(() => {
     const renderPdf = async () => {
@@ -87,7 +85,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
       style={{
         position: "relative",
         width: width + 30,
-        height: height + 120, // ปรับให้มีพื้นที่สำหรับชื่อไฟล์ + material + ปุ่ม
+        height: height + 120,
         padding: 10,
         display: "flex",
         flexDirection: "column",

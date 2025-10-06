@@ -143,7 +143,39 @@ export default function DetailModal({
   const removeRow = (taskIndex: number) => {
     setSubTasks((prevTasks) => prevTasks.filter((_, i) => i != taskIndex));
   };
+  const validateForm = () => {
+    if (
+      !titleName ||
+      !companyName ||
+      !companyPrefix ||
+      !poNumber ||
+      !qtNumber ||
+      !selectedDate ||
+      !sale ||
+      taskType.length === 0
+    ) {
+      toast.warning("กรุณากรอกข้อมูลให้ครบถ้วน", {
+        position: "bottom-right",
+        theme: "colored",
+      });
+      return false;
+    }
+
+    for (const [index, task] of subtasks.entries()) {
+      if (!task.material || task.quantity === "" || task.quantity <= 0) {
+        toast.warning(`กรุณากรอกรายละเอียดในรายการที่ ${index + 1} ให้ครบ`, {
+          position: "bottom-right",
+          theme: "colored",
+        });
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) return;
     try {
       const formData = new FormData();
       formData.append("titleName", titleName);
@@ -172,11 +204,11 @@ export default function DetailModal({
 
       await dispatch(createTask(formData)).unwrap();
 
-      toast("🦄 สร้างงานสำเร็จ!", {
+      toast.success("สร้างคำขอสำเร็จ", {
         position: "bottom-right",
         autoClose: 5000,
         hideProgressBar: false,
-        closeOnClick: true,
+        closeOnClick: false,
         pauseOnHover: true,
         draggable: true,
         progress: undefined,

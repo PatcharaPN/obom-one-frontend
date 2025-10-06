@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosInstance from "../../contexts/axiosInstance";
-
+const token = localStorage.getItem("accessToken");
+const user = localStorage.getItem("user");
 // Define a type for the slice state Auth
 interface AuthState {
   isAuthenticated: boolean;
@@ -9,16 +10,17 @@ interface AuthState {
     id: string;
     name: string;
     email: string;
+    role: string;
   } | null;
   error: string | null;
   loading: boolean;
 }
 
 const initialState: AuthState = {
-  isAuthenticated: false,
-  token: null,
+  isAuthenticated: !!token,
+  token: token || null,
+  user: user ? JSON.parse(user) : null,
   loading: false,
-  user: null,
   error: null,
 };
 

@@ -4,16 +4,16 @@ export const menuItems = [
     label: "หน้าหลัก",
     icon: "iconamoon:home",
   },
-  {
-    key: "account",
-    label: "บัญชี",
-    icon: "ic:outline-account-circle",
-  },
+  // {
+  //   key: "account",
+  //   label: "บัญชี",
+  //   icon: "ic:outline-account-circle",
+  // },
   //   { key: "about", label: "About", icon: "mdi:information" },
 ];
 
 export const subMenuItems = [
-  { key: "home", label: "รายการคำขอ", icon: "quill:paper", path: "/" },
+  { key: "home", label: "รายการคำขอ", icon: "quill:paper", path: "/home" },
   {
     key: "status-tracking",
     label: "เช็คสถานะ",

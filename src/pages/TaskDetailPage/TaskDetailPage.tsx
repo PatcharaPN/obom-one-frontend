@@ -9,6 +9,7 @@ import PdfThumbnail from "../../components/PDFThumbnail";
 import SuccessModal from "../../components/SuccessPopup";
 import axios from "axios";
 import type { TaskState } from "../../types/task";
+import { Bounce, toast } from "react-toastify";
 
 const TaskDetailPage = () => {
   const { taskId } = useParams();
@@ -18,9 +19,11 @@ const TaskDetailPage = () => {
   const { currentTask, loading } = useAppSelector<TaskState>(
     (state) => state.task
   );
+  const user = useAppSelector((state) => state.auth.user);
   const [checkPrint, setCheckPrint] = useState<{ [key: string]: boolean }>({});
   const [successOpen, setSuccessOpen] = useState(false);
 
+  const canApprove = user?.role === "Sale Support 2";
   useEffect(() => {
     if (taskId) dispatch(fetchTaskById(taskId));
   }, [taskId, dispatch]);
@@ -29,6 +32,20 @@ const TaskDetailPage = () => {
       t.attachments?.every((file) => checkPrint[file.path])
     ) ?? false;
   const handleApprove = async () => {
+    if (!canApprove) {
+      toast.error("ไม่มีสิทธิ์ในการอนุมัติ", {
+        position: "bottom-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+        transition: Bounce,
+      });
+      return;
+    }
     try {
       const res = await axios.put(
         `${import.meta.env.VITE_BASE_URL}/api/task/${taskId}/approve`,
@@ -54,7 +71,7 @@ const TaskDetailPage = () => {
   };
   if (loading || !currentTask) return <div>Loading...</div>;
   return (
-    <div className="grid grid-rows-[350px_1fr] h-full">
+    <div className="grid grid-rows-[360px_1fr] h-full">
       {/* Header / Info Section */}
       <div className="p-6 bg-white shadow-md grid grid-cols-2 gap-4">
         <div>
@@ -85,7 +102,7 @@ const TaskDetailPage = () => {
 
           <div className="mb-2 text-gray-700 flex flex-col gap-2">
             <span className="font-semibold">ฝ่ายขายที่ดูแล:</span>{" "}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-blue-600/20 w-fit px-2 py-1 rounded-full">
               <img
                 src={
                   currentTask.sale?.profilePic

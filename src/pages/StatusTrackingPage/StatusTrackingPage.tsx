@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -12,16 +12,13 @@ import {
   IconButton,
 } from "@mui/material";
 import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
-
 import { toZonedTime } from "date-fns-tz";
 import { useAppDispatch, useAppSelector } from "../../store";
 import { fetchAllTask } from "../../features/redux/TaskSlice";
 import DashboardCard from "../../components/DashboardCard";
-import Divider from "../../components/Divider";
 import { formatThaiDate } from "../../utils/formatThaiDate";
-import { renderStatusBadge } from "../../components/StatusBadge";
-import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
+import SummaryModal from "../../components/SummaryModal";
 
 const getLocalDayStr = (date: Date) => {
   return toZonedTime(date, "Asia/Bangkok").toLocaleDateString("en-CA");
@@ -29,15 +26,19 @@ const getLocalDayStr = (date: Date) => {
 
 const StatusTrackingPage = () => {
   const dispatch = useAppDispatch();
-  const tasks = useAppSelector((state) => state.task.summaryTasks);
+  const tasks = useAppSelector((state) => state.task.summaryTasks) || [];
+
   const [tasksByDay, setTasksByDay] = useState<{ [date: string]: any[] }>({});
   const [openDays, setOpenDays] = useState<{ [date: string]: boolean }>({});
-  const todayStr = getLocalDayStr(new Date());
-  const naviagate = useNavigate();
-  useEffect(() => {
-    if (!tasks) return;
-    const grouped: { [date: string]: any[] } = {};
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedTask, setSelectedTask] = useState<any[]>([]);
+  const [isSummaryModalOpen, setSummaryModalOpen] = useState<boolean>(false);
 
+  const todayStr = getLocalDayStr(new Date());
+
+  // จัดกลุ่ม tasks ตามวัน
+  useEffect(() => {
+    const grouped: { [date: string]: any[] } = {};
     tasks.forEach((t) => {
       if (!t.approveDate) return;
       const dayStr = getLocalDayStr(new Date(t.approveDate));
@@ -47,19 +48,24 @@ const StatusTrackingPage = () => {
 
     setTasksByDay(grouped);
 
+    // initial collapse state
     const initialOpen: { [date: string]: boolean } = {};
     Object.keys(grouped).forEach((day) => (initialOpen[day] = false));
     setOpenDays(initialOpen);
   }, [tasks]);
 
+  // Fetch tasks
   useEffect(() => {
     dispatch(fetchAllTask());
   }, [dispatch]);
-  const todayCount =
-    tasksByDay[todayStr]?.filter((t) => t.isApprove).length || 0;
 
-  const weekCount = Object.entries(tasksByDay).reduce((acc, [day, arr]) => {
-    const d = new Date(day);
+  // สรุป count
+  const todayCount = useMemo(
+    () => tasksByDay[todayStr]?.filter((t) => t.isApprove).length || 0,
+    [tasksByDay, todayStr]
+  );
+
+  const weekCount = useMemo(() => {
     const now = new Date();
     const start = new Date(now);
     start.setDate(now.getDate() - now.getDay() + 1);
@@ -68,27 +74,156 @@ const StatusTrackingPage = () => {
     end.setDate(start.getDate() + 6);
     end.setHours(23, 59, 59, 999);
 
-    if (d >= start && d <= end) {
-      return acc + arr.filter((t) => t.isApprove).length;
-    }
-    return acc;
-  }, 0);
+    return Object.entries(tasksByDay).reduce((acc, [day, arr]) => {
+      const d = new Date(day);
+      if (d >= start && d <= end) {
+        return acc + arr.filter((t) => t.isApprove).length;
+      }
+      return acc;
+    }, 0);
+  }, [tasksByDay]);
 
-  const monthCount = Object.entries(tasksByDay).reduce((acc, [day, arr]) => {
+  const monthCount = useMemo(() => {
+    const now = new Date();
+    return Object.entries(tasksByDay).reduce((acc, [day, arr]) => {
+      const d = new Date(day);
+      if (
+        d.getMonth() === now.getMonth() &&
+        d.getFullYear() === now.getFullYear()
+      ) {
+        return acc + arr.filter((t) => t.isApprove).length;
+      }
+      return acc;
+    }, 0);
+  }, [tasksByDay]);
+
+  // แยก tasks เป็นวันนี้ และ 7 วันที่ผ่านมา
+  const todayTasksByDay: { [date: string]: any[] } = {};
+  const last7DaysTasksByDay: { [date: string]: any[] } = {};
+
+  Object.entries(tasksByDay).forEach(([day, dayTasks]) => {
     const d = new Date(day);
     const now = new Date();
-    if (
-      d.getMonth() === now.getMonth() &&
-      d.getFullYear() === now.getFullYear()
-    ) {
-      return acc + arr.filter((t) => t.isApprove).length;
+    const diffDays = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
+
+    const approvedTasks = dayTasks.filter((t) => t.isApprove);
+    if (approvedTasks.length === 0) return;
+
+    if (day === todayStr) {
+      todayTasksByDay[day] = approvedTasks;
+    } else if (diffDays <= 7 && diffDays >= 0) {
+      last7DaysTasksByDay[day] = approvedTasks;
     }
-    return acc;
-  }, 0);
+  });
+
+  const renderTaskTable = (day: string, dayTasks: any[]) => (
+    <div key={day} className="flex flex-col gap-2">
+      {/* Header */}
+      <div
+        className="flex justify-between items-center cursor-pointer p-2"
+        onClick={() => setOpenDays((prev) => ({ ...prev, [day]: !prev[day] }))}
+      >
+        <Typography
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderRadius: "0.5rem",
+            padding: "10px",
+            width: "100%",
+            backgroundColor:
+              day === todayStr
+                ? "rgba(0, 128, 0, 0.1)" // วันนี้
+                : "rgba(128, 128, 128, 0.1)", // วันอื่น
+            color: day === todayStr ? "green" : "gray",
+            fontWeight: "normal",
+          }}
+        >
+          {formatThaiDate(day)} {day === todayStr ? "(วันนี้)" : ""} (
+          {dayTasks.length})
+          <IconButton size="small">
+            {openDays[day] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+          </IconButton>
+        </Typography>
+      </div>
+
+      {/* Collapse */}
+      <Collapse in={openDays[day]}>
+        <div className="flex justify-end mb-2">
+          <button
+            className="flex gap-2 items-center cursor-pointer hover:bg-amber-700 transition-all hover:text-white border border-amber-600 rounded-xl p-2 text-sm bg-amber-400/20 text-amber-700"
+            onClick={() => {
+              setSelectedTask(dayTasks);
+              setSelectedDate(day);
+              setSummaryModalOpen(true);
+            }}
+          >
+            <Icon icon="pajamas:export" width="16" height="16" /> สรุปงาน
+          </button>
+        </div>
+
+        {dayTasks.length === 0 ? (
+          <Typography className="text-center py-4">ไม่มีงานในวันนี้</Typography>
+        ) : (
+          <TableContainer component={Paper} className="max-h-[250px]">
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>หัวข้อ</TableCell>
+                  <TableCell>บริษัท</TableCell>
+                  <TableCell>วัตถุดิบ</TableCell>
+                  <TableCell>กำหนดส่ง</TableCell>
+                  <TableCell>ผู้ดูแล</TableCell>
+                  <TableCell>สถานะ</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {dayTasks.map((t) => (
+                  <TableRow key={t._id}>
+                    <TableCell>{t.titleName || "-"}</TableCell>
+                    <TableCell>{t.companyName || "-"}</TableCell>
+                    <TableCell>
+                      {t.tasks?.map((sub: any) => sub.material).join(", ") ??
+                        "ไม่มีวัตถุดิบ"}
+                    </TableCell>
+                    <TableCell>
+                      {t.dueDate ? formatThaiDate(t.dueDate) : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2 items-center">
+                        <img
+                          src={
+                            t.sale?.profilePic
+                              ? `${import.meta.env.VITE_BASE_URL}/api/${
+                                  t.sale.profilePic
+                                }`
+                              : "/default.png"
+                          }
+                          alt={t.sale?.name ?? "ไม่ระบุ"}
+                          className="rounded-full w-6 h-6 object-cover"
+                        />
+                        {t.sale?.name ?? "-"} {t.sale?.surname ?? "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="px-2 py-1 bg-[#abffbc] text-[#147800] rounded-full text-sm">
+                        อนุมัติแล้ว
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Collapse>
+    </div>
+  );
 
   return (
-    <div>
-      <div className="flex gap-4 overflow-hidden ">
+    <div className="p-4">
+      {/* Dashboard */}
+      <div className="flex gap-4 overflow-hidden h-fit p-4">
         <DashboardCard
           count={tasks.filter((t) => !t.isApprove).length}
           type={"คำขอใหม่รออนุมัติ"}
@@ -97,113 +232,32 @@ const StatusTrackingPage = () => {
         <DashboardCard count={weekCount} type={"ขึ้นงานทั้งหมดสัปดาห์นี้"} />
         <DashboardCard count={monthCount} type={"ขึ้นงานทั้งหมดเดือนนี้"} />
       </div>
-      <Divider />
-      <div className="flex justify-between px-2 gap-4 overflow-x-auto py-10 text-2xl">
+
+
+      <div className="flex justify-between items-center px-2 gap-4 overflow-x-auto py-10 text-2xl">
         <p>การขึ้นงาน</p>
-        <button className="flex gap-2 items-center cursor-pointer hover:bg-amber-700 transition-all hover:text-white border border-amber-600 rounded-xl p-2 text-lg bg-amber-400/20 text-amber-700">
-          <Icon icon="pajamas:export" width="16" height="16" /> ส่งออก
-        </button>
       </div>
+
+      {/* Tasks */}
       <div className="flex flex-col gap-4">
-        {Object.entries(tasksByDay)
-          .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-          .map(([day, dayTasks]) => {
-            const approvedTasks = dayTasks.filter((t) => t.isApprove);
-            if (approvedTasks.length === 0) return null;
-            console.log(openDays[day]);
-            return (
-              <div key={day} className="flex flex-col gap-2">
-                <div
-                  className="flex justify-between items-center cursor-pointer bg-gray-100 p-2"
-                  onClick={() =>
-                    setOpenDays((prev) => ({ ...prev, [day]: !prev[day] }))
-                  }
-                >
-                  <Typography
-                    sx={{
-                      color: day === todayStr ? "green" : "inherit",
-                      fontWeight: day === todayStr ? "normal" : "normal",
-                    }}
-                  >
-                    {formatThaiDate(day)} {day === todayStr ? "(วันนี้)" : ""} (
-                    {approvedTasks.length})
-                  </Typography>
+        {Object.entries(todayTasksByDay)
+          .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+          .map(([day, dayTasks]) => renderTaskTable(day, dayTasks))}
 
-                  <IconButton size="small">
-                    {openDays[day] ? (
-                      <KeyboardArrowUp />
-                    ) : (
-                      <KeyboardArrowDown />
-                    )}
-                  </IconButton>
-                </div>
-
-                <Collapse in={openDays[day]}>
-                  <TableContainer component={Paper} className="max-h-[250px]">
-                    <Table stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>หัวข้อ</TableCell>
-                          <TableCell>บริษัท</TableCell>
-                          <TableCell>วัตถุดิบ</TableCell>
-                          <TableCell>กำหนดส่ง</TableCell>
-                          <TableCell>ผู้ดูแล</TableCell>
-                          <TableCell>สถานะ</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {approvedTasks.map((t) => (
-                          <TableRow
-                            key={t._id}
-                            className="cursor-pointer"
-                            onClick={() => naviagate(`/Task/${t._id}`)}
-                          >
-                            <TableCell>
-                              {" "}
-                              <div className="flex items-center gap-2 w-fit">
-                                <p>{t.titleName}</p>{" "}
-                                {renderStatusBadge(t.taskType)}
-                              </div>
-                            </TableCell>
-                            <TableCell>{t.companyName}</TableCell>
-                            <TableCell>
-                              {t.tasks
-                                ?.map((sub: any) => sub.material)
-                                .join(", ") || "-"}
-                            </TableCell>
-                            <TableCell>{formatThaiDate(t.dueDate)}</TableCell>
-                            <TableCell>
-                              {" "}
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={
-                                    t.sale?.profilePic
-                                      ? `${import.meta.env.VITE_BASE_URL}/api/${
-                                          t.sale.profilePic
-                                        }`
-                                      : "/default.png"
-                                  }
-                                  alt={t.sale?.name || "ไม่ระบุ"}
-                                  className="rounded-full w-6 h-6 object-cover"
-                                />
-                                {t.sale?.name || "ไม่ระบุ"}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="px-2 py-1 bg-[#abffbc] text-[#147800] rounded-full text-sm">
-                                อนุมัติแล้ว
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Collapse>
-              </div>
-            );
-          })}
+        <Typography className="text-xl font-semibold mt-4">
+          7 วันที่ผ่านมา
+        </Typography>
+        {Object.entries(last7DaysTasksByDay)
+          .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+          .map(([day, dayTasks]) => renderTaskTable(day, dayTasks))}
       </div>
+
+      <SummaryModal
+        open={isSummaryModalOpen}
+        onClose={() => setSummaryModalOpen(false)}
+        date={selectedDate}
+        tasksForDate={selectedTask}
+      />
     </div>
   );
 };

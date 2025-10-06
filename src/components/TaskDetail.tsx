@@ -188,9 +188,7 @@ export default function TaskDetail({ open, onClose, taskId }: TaskDetailProp) {
                       fileUrl={`https://one.obomgauge.com/api${file.path}`}
                       width={120}
                       filePath={""}
-                      onPrint={function (filename: string): void {
-                        throw new Error("Function not implemented.");
-                      }}
+                      onPrint={() => {}}
                     />{" "}
                   </div>
                 ))}

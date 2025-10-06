@@ -9,22 +9,30 @@ const PrimaryButton = ({
   variant = "primary",
 }: ButtonProps) => {
   const variantStyle = {
-    primary: "bg-[#007ACC] text-white hover:bg-[#005893]",
-    secondary: "bg-gray-300 text-black hover:bg-gray-400",
-    danger: "bg-red-500 text-white hover:bg-red-600",
+    primary:
+      "bg-gradient-to-r from-blue-500 via-cyan-400 to-teal-400 text-white",
+    secondary: "bg-gray-300 to-gray-400 text-black",
+    danger: "bg-gradient-to-r from-red-500 to-red-600 text-white",
   };
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-full px-4 py-2 cursor-pointer flex items-center gap-2  ${
-        variantStyle[variant]
-      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      className={`
+        relative cursor-pointer rounded-full px-5 py-2 flex items-center gap-2 justify-center
+         transition-all transform 
+        hover:-translate-y-0.5 hover:scale-[1] 
+        ${variantStyle[variant]}
+        ${
+          disabled
+            ? "opacity-50 cursor-not-allowed hover:translate-y-0 hover:scale-100"
+            : ""
+        }
+      `}
     >
-      {" "}
       <span>{label}</span>
-      {icon && <Icon icon={icon} />}
+      {icon && <Icon icon={icon} width="20" height="20" />}
     </button>
   );
 };

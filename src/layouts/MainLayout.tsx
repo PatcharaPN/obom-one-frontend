@@ -5,7 +5,7 @@ import SectionLayout from "./SectionLayout";
 import { subMenuItems } from "../config/SidebarMenu";
 
 const MainLayout = () => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeItem, setActiveItem] = useState("home");
   const [activeSectionItem, setActiveSectionItem] = useState("appeal");
   const toggleCollapse = () => setIsCollapsed((prev) => !prev);

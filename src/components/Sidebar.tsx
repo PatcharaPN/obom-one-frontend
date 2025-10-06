@@ -1,7 +1,7 @@
 import { Icon } from "@iconify/react";
 import type { SidebarProps } from "../types/interface";
 import { menuItems } from "../config/SidebarMenu";
-import { useNavigate } from "react-router-dom";
+import CurrentUserComponent from "./CurrentUserComponent";
 
 export default function Sidebar({
   isCollapsed,
@@ -9,16 +9,6 @@ export default function Sidebar({
   activeItem,
   onSelectItem,
 }: SidebarProps) {
-  const navigate = useNavigate();
-  const handleLogout = () => {
-    try {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-      navigate("/", { replace: true });
-    } catch (error) {
-      console.log("An error occurred during logout:", error);
-    }
-  };
   return (
     <div
       className={`rounded-tr-2xl rounded-br-2xl h-screen sticky top-0 bg-gradient-to-b from-[#005B98] to-[#003C65] text-[#00C3FF] transition-all duration-300 ${
@@ -32,12 +22,12 @@ export default function Sidebar({
         {isCollapsed ? "→" : "←"}
       </button>
 
-      <ul className="min-h-screen grid grid-rows-3">
+      <ul className="min-h-screen grid grid-rows-[200px_auto_100px]">
         <img
           className={`mx-auto mt-20 mb-10 transition-all duration-300 ${
-            isCollapsed ? "w-0 h-0" : "w-0 h-0"
+            isCollapsed ? "w-25 h-auto" : "w-20 h-20"
           }`}
-          src="./LOGO.png"
+          src="/LOGO.png"
         />
         <div className="flex flex-col gap-2">
           {menuItems.map((item) => (
@@ -54,17 +44,8 @@ export default function Sidebar({
           ))}
         </div>
         <div className="flex justify-center">
-          <button
-            onClick={handleLogout}
-            className="flex gap-2 self-end mb-4 p-2 hover:bg-gray-700 rounded"
-          >
-            <Icon
-              icon="material-symbols:logout-rounded"
-              width="24"
-              height="24"
-            />
-            {!isCollapsed && <span>ลงชื่อออก</span>}
-          </button>
+          {" "}
+          <CurrentUserComponent />
         </div>
       </ul>
     </div>
