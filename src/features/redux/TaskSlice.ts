@@ -59,11 +59,25 @@ export const updateTask = createAsyncThunk(
     return res.data;
   }
 );
-
+export const deleteTask = createAsyncThunk(
+  "task/delete",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.delete(`/task/delete/${id}`);
+      return { id, data: res.data };
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
 const taskSlice = createSlice({
   name: "task",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCurrentTask: (state) => {
+      state.currentTask = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchTasks.pending, (state) => {
@@ -113,8 +127,26 @@ const taskSlice = createSlice({
       .addCase(fetchAllTask.pending, (state) => {
         state.loading = true;
         state.error = null;
+      })
+      .addCase(deleteTask.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const deletedId = action.payload.id;
+
+        state.tasks = state.tasks.filter((t) => t._id !== deletedId);
+
+        if (state.currentTask && state.currentTask._id === deletedId) {
+          state.currentTask = null;
+        }
+      })
+      .addCase(deleteTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
-
+export const { clearCurrentTask } = taskSlice.actions;
 export default taskSlice.reducer;

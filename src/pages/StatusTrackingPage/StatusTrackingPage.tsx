@@ -16,9 +16,10 @@ import { toZonedTime } from "date-fns-tz";
 import { useAppDispatch, useAppSelector } from "../../store";
 import { fetchAllTask } from "../../features/redux/TaskSlice";
 import DashboardCard from "../../components/DashboardCard";
-import { formatThaiDate } from "../../utils/formatThaiDate";
+import { formatThaiDate, formatThaiDateTime } from "../../utils/formatThaiDate";
 import { Icon } from "@iconify/react";
 import SummaryModal from "../../components/SummaryModal";
+import SearchBar from "../../components/Searchbar";
 
 const getLocalDayStr = (date: Date) => {
   return toZonedTime(date, "Asia/Bangkok").toLocaleDateString("en-CA");
@@ -28,6 +29,9 @@ const StatusTrackingPage = () => {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector((state) => state.task.summaryTasks) || [];
 
+  // --- เพิ่ม state search ---
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [tasksByDay, setTasksByDay] = useState<{ [date: string]: any[] }>({});
   const [openDays, setOpenDays] = useState<{ [date: string]: boolean }>({});
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -36,10 +40,35 @@ const StatusTrackingPage = () => {
 
   const todayStr = getLocalDayStr(new Date());
 
-  // จัดกลุ่ม tasks ตามวัน
+  // กรอง tasks ตาม searchTerm
+  const filteredTasks = useMemo(() => {
+    if (!searchTerm.trim()) return tasks;
+
+    const lowerSearch = searchTerm.toLowerCase();
+    return tasks.filter((t: any) => {
+      // ตรวจ field ที่ต้องการค้นหา
+      const title = t.titleName?.toLowerCase() || "";
+      const company = t.companyName?.toLowerCase() || "";
+      const poNumber = t.poNumber?.toLowerCase() || ""; // สมมติมี field นี้
+      const qoNumber = t.qtNumber?.toLowerCase() || ""; // สมมติมี field นี้
+      const saleName = t.sale?.name?.toLowerCase() || "";
+      const saleSurname = t.sale?.surname?.toLowerCase() || "";
+
+      return (
+        title.includes(lowerSearch) ||
+        company.includes(lowerSearch) ||
+        poNumber.includes(lowerSearch) ||
+        qoNumber.includes(lowerSearch) ||
+        saleName.includes(lowerSearch) ||
+        saleSurname.includes(lowerSearch)
+      );
+    });
+  }, [searchTerm, tasks]);
+
+  // จัดกลุ่ม tasks ตามวัน (ใช้ filteredTasks แทน tasks)
   useEffect(() => {
     const grouped: { [date: string]: any[] } = {};
-    tasks.forEach((t) => {
+    filteredTasks.forEach((t) => {
       if (!t.approveDate) return;
       const dayStr = getLocalDayStr(new Date(t.approveDate));
       if (!grouped[dayStr]) grouped[dayStr] = [];
@@ -52,7 +81,7 @@ const StatusTrackingPage = () => {
     const initialOpen: { [date: string]: boolean } = {};
     Object.keys(grouped).forEach((day) => (initialOpen[day] = false));
     setOpenDays(initialOpen);
-  }, [tasks]);
+  }, [filteredTasks]);
 
   // Fetch tasks
   useEffect(() => {
@@ -148,7 +177,7 @@ const StatusTrackingPage = () => {
       </div>
 
       {/* Collapse */}
-      <Collapse in={openDays[day]}>
+      <Collapse in={!openDays[day]}>
         <div className="flex justify-end mb-2">
           <button
             className="flex gap-2 items-center cursor-pointer hover:bg-amber-700 transition-all hover:text-white border border-amber-600 rounded-xl p-2 text-sm bg-amber-400/20 text-amber-700"
@@ -169,12 +198,13 @@ const StatusTrackingPage = () => {
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>หัวข้อ</TableCell>
                   <TableCell>บริษัท</TableCell>
+                  <TableCell>รหัสการผลิต</TableCell>
                   <TableCell>วัตถุดิบ</TableCell>
                   <TableCell>กำหนดส่ง</TableCell>
                   <TableCell>ผู้ดูแล</TableCell>
                   <TableCell>สถานะ</TableCell>
+                  <TableCell>วัน/เวลา ที่อนุมัติ</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -210,6 +240,7 @@ const StatusTrackingPage = () => {
                         อนุมัติแล้ว
                       </span>
                     </TableCell>
+                    <TableCell>{formatThaiDateTime(t.approveDate)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -219,37 +250,135 @@ const StatusTrackingPage = () => {
       </Collapse>
     </div>
   );
+  const renderFlatSearchTable = (filteredTasks: any[]) => {
+    if (filteredTasks.length === 0) {
+      return <Typography className="text-center py-4">ไม่พบข้อมูล</Typography>;
+    }
+
+    return (
+      <TableContainer component={Paper}>
+        <Table stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell>บริษัท</TableCell>
+              <TableCell>รหัสการผลิต</TableCell>
+              <TableCell>วัตถุดิบ</TableCell>
+              <TableCell>กำหนดส่ง</TableCell>
+              <TableCell>วันที่อนุมัติ</TableCell>
+              <TableCell>ผู้ดูแล</TableCell>
+              <TableCell>สถานะ</TableCell>
+              <TableCell>วัน/เวลา ที่อนุมัติ</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredTasks.map((t) => (
+              <TableRow key={t._id}>
+                <TableCell>{t.titleName || "-"}</TableCell>
+                <TableCell>{t.companyName || "-"}</TableCell>
+                <TableCell>
+                  {t.tasks?.map((sub: any) => sub.material).join(", ") ??
+                    "ไม่มีวัตถุดิบ"}
+                </TableCell>
+                <TableCell>
+                  {t.dueDate ? formatThaiDate(t.dueDate) : "-"}
+                </TableCell>
+                <TableCell>
+                  {t.approveDate ? formatThaiDate(t.approveDate) : "-"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2 items-center">
+                    <img
+                      src={
+                        t.sale?.profilePic
+                          ? `${import.meta.env.VITE_BASE_URL}/api/${
+                              t.sale.profilePic
+                            }`
+                          : "/default.png"
+                      }
+                      alt={t.sale?.name ?? "ไม่ระบุ"}
+                      className="rounded-full w-6 h-6 object-cover"
+                    />
+                    {t.sale?.name ?? "-"} {t.sale?.surname ?? "-"}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="px-2 py-1 bg-[#abffbc] text-[#147800] rounded-full text-sm">
+                    อนุมัติแล้ว
+                  </span>
+                </TableCell>
+                <TableCell>{formatThaiDateTime(t.approveDate)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
 
   return (
     <div className="p-4">
-      {/* Dashboard */}
-      <div className="flex gap-4 overflow-hidden h-fit p-4">
-        <DashboardCard
-          count={tasks.filter((t) => !t.isApprove).length}
-          type={"คำขอใหม่รออนุมัติ"}
-        />
-        <DashboardCard count={todayCount} type={"ขึ้นงานทั้งหมดวันนี้"} />
-        <DashboardCard count={weekCount} type={"ขึ้นงานทั้งหมดสัปดาห์นี้"} />
-        <DashboardCard count={monthCount} type={"ขึ้นงานทั้งหมดเดือนนี้"} />
-      </div>
+      {/* Search Input */}
 
+      {/* Dashboard */}
+      {!searchTerm.trim() ? (
+        <div className="flex gap-4 overflow-hidden h-fit p-4">
+          <DashboardCard
+            count={tasks.filter((t) => !t.isApprove).length}
+            type={"คำขอใหม่รออนุมัติ"}
+          />
+          <DashboardCard count={todayCount} type={"ขึ้นงานทั้งหมดวันนี้"} />
+          <DashboardCard count={weekCount} type={"ขึ้นงานทั้งหมดสัปดาห์นี้"} />
+          <DashboardCard count={monthCount} type={"ขึ้นงานทั้งหมดเดือนนี้"} />
+        </div>
+      ) : (
+        <div className="flex gap-4 overflow-hidden h-fit p-4">
+          <DashboardCard
+            count={filteredTasks.length}
+            type={"ผลลัพธ์ที่ค้นพบทั้งหมด"}
+          />
+          <DashboardCard
+            count={filteredTasks.filter((t) => t.isApprove).length}
+            type={"ที่อนุมัติแล้ว"}
+          />
+          <DashboardCard
+            count={filteredTasks.filter((t) => !t.isApprove).length}
+            type={"ยังไม่อนุมัติ"}
+          />
+        </div>
+      )}
 
       <div className="flex justify-between items-center px-2 gap-4 overflow-x-auto py-10 text-2xl">
         <p>การขึ้นงาน</p>
       </div>
-
+      <div className="mb-4 max-w-sm p-2">
+        <SearchBar
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onClear={() => setSearchTerm("")}
+        />
+      </div>
       {/* Tasks */}
       <div className="flex flex-col gap-4">
-        {Object.entries(todayTasksByDay)
-          .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-          .map(([day, dayTasks]) => renderTaskTable(day, dayTasks))}
+        {searchTerm.trim() ? (
+          renderFlatSearchTable(filteredTasks)
+        ) : (
+          <>
+            {Object.entries(todayTasksByDay)
+              .sort(
+                (a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime()
+              )
+              .map(([day, dayTasks]) => renderTaskTable(day, dayTasks))}
 
-        <Typography className="text-xl font-semibold mt-4">
-          7 วันที่ผ่านมา
-        </Typography>
-        {Object.entries(last7DaysTasksByDay)
-          .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-          .map(([day, dayTasks]) => renderTaskTable(day, dayTasks))}
+            <Typography className="text-xl font-semibold mt-4 p-2">
+              7 วันที่ผ่านมา
+            </Typography>
+            {Object.entries(last7DaysTasksByDay)
+              .sort(
+                (a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime()
+              )
+              .map(([day, dayTasks]) => renderTaskTable(day, dayTasks))}
+          </>
+        )}
       </div>
 
       <SummaryModal

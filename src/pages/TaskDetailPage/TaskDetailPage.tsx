@@ -23,7 +23,7 @@ const TaskDetailPage = () => {
   const [checkPrint, setCheckPrint] = useState<{ [key: string]: boolean }>({});
   const [successOpen, setSuccessOpen] = useState(false);
 
-  const canApprove = user?.role === "Sale Support 2";
+  const canApprove = user?.role === "Sale Support 2" || "IT";
   useEffect(() => {
     if (taskId) dispatch(fetchTaskById(taskId));
   }, [taskId, dispatch]);
@@ -91,7 +91,7 @@ const TaskDetailPage = () => {
 
           <div className="flex flex-wrap gap-5 mb-2 text-gray-700">
             <p>
-              <span className="font-semibold">บริษัท:</span>{" "}
+              <span className="font-semibold">รหัสการผลิต:</span>{" "}
               {currentTask.companyName} ({currentTask.companyPrefix})
             </p>
             <p>

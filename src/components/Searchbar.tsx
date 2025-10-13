@@ -1,9 +1,39 @@
+import { InputAdornment, IconButton, TextField } from "@mui/material";
 import { Icon } from "@iconify/react";
 
-export const Searchbar = () => {
+const SearchBar = ({
+  value,
+  onChange,
+  onClear,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClear: () => void;
+}) => {
   return (
-    <div className="border w-60 h-10 rounded-lg flex items-center gap-2 p-2">
-      <Icon icon={"mdi:search"} /> <p>Search...</p>
-    </div>
+    <TextField
+      label="ค้นหา (ชื่อหัวข้อ, บริษัท, ผู้ดูแล...)"
+      variant="outlined"
+      fullWidth
+      size="medium"
+      value={value}
+      onChange={onChange}
+      placeholder="พิมพ์เพื่อค้นหา..."
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start">
+            <Icon icon="mdi:magnify" />
+          </InputAdornment>
+        ),
+        endAdornment: value && (
+          <InputAdornment position="end">
+            <IconButton onClick={onClear}>
+              <Icon icon="mdi:close-circle" />
+            </IconButton>
+          </InputAdornment>
+        ),
+      }}
+    />
   );
 };
+export default SearchBar;

@@ -35,30 +35,38 @@ const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
   return (
     <div className="mt-2 rounded-sm p-2 border border-gray-300">
       <div className="flex w-full h-10 overflow-hidden border border-gray-300 rounded-sm">
+        {/* ชื่อชิ้นงาน */}
         <input
           type="text"
+          value={data.name}
           className="flex-1 min-w-0 px-2 outline-none border-r border-gray-200"
           placeholder="ชื่อชิ้นงาน"
           onChange={(e) => handleFieldChange("name", e.target.value)}
         />
-        <select
+
+        {/* Material เป็น TextField select */}
+
+        <input
+          type="text"
           name="material"
+          value={data.material}
           onChange={(e) => handleFieldChange("material", e.target.value)}
-          className="flex-1 min-w-0 px-2 outline-none text-sm border-r border-gray-200"
-        >
-          <option value="">เลือกชนิด Material</option>
-          <option value="SKS3">SKS3</option>
-          <option value="S45C">S45C</option>
-          <option value="SKD11">SKD11</option>
-        </select>
+          className="flex-1 min-w-0 px-2  outline-none border-r border-gray-200"
+          placeholder="ชนิด Material"
+        />
+
+        {/* จำนวน */}
         <input
           type="number"
           className="flex-1 min-w-0 px-2 outline-none border-r border-gray-200"
           placeholder="จำนวน"
+          value={data.quantity}
           onChange={(e) =>
             handleFieldChange("quantity", e.target.valueAsNumber)
           }
         />
+
+        {/* ปุ่มลบ / แก้ไข */}
         <div className="flex-[0.5] flex items-center justify-evenly bg-gray-100 px-2 text-sm">
           <button
             onClick={(e) => {
@@ -67,9 +75,6 @@ const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
             }}
           >
             <Icon icon="tabler:trash" color="#FF5858" width="17" height="17" />
-          </button>
-          <button>
-            <Icon icon="lucide:edit" color="#FF8800" width="17" height="17" />
           </button>
         </div>
       </div>

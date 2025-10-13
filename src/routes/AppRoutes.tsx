@@ -13,6 +13,14 @@ export const AppRoutes = () => {
       <Route path="/" element={<LoginPage />} />
 
       <Route element={<MainLayout />}>
+        {/* <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        /> */}
         <Route
           path="/Home"
           element={

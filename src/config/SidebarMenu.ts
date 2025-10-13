@@ -13,6 +13,12 @@ export const menuItems = [
 ];
 
 export const subMenuItems = [
+  // {
+  //   key: "dashboard",
+  //   label: "หน้าหลัก",
+  //   icon: "pixelarticons:dashboard",
+  //   path: "/dashboard",
+  // },
   { key: "home", label: "รายการคำขอ", icon: "quill:paper", path: "/home" },
   {
     key: "status-tracking",

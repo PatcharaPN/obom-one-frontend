@@ -14,7 +14,7 @@ import TextareaAutosize from "@mui/material/TextareaAutosize";
 import Button from "@mui/material/Button";
 import Autocomplete from "@mui/material/Autocomplete";
 
-import { createTask } from "../../src/features/redux/TaskSlice";
+import { createTask, deleteTask } from "../../src/features/redux/TaskSlice";
 import { useAppDispatch, useAppSelector } from "../store";
 import { useEffect, useState } from "react";
 import { fetchSale } from "../features/redux/UserSlice";
@@ -73,6 +73,7 @@ interface DetailModalProps {
   onClose: () => void;
   children?: React.ReactNode;
   taskDataToEdit?: any;
+  setTaskDataToEdit?: (data: any) => void; // เพิ่ม prop ฟังก์ชันนี้
 }
 
 export default function DetailModal({
@@ -82,6 +83,7 @@ export default function DetailModal({
 }: DetailModalProps) {
   const dispatch = useAppDispatch();
   const [subTaskCount] = useState(1);
+  // const user = useAppSelector((state) => state.auth.user);
   const { sales } = useAppSelector((state) => state.user);
   const [titleName, setTitleName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -105,6 +107,7 @@ export default function DetailModal({
   }, [dispatch]);
 
   useEffect(() => {
+    console.log("taskDataToEdit", taskDataToEdit);
     if (taskDataToEdit) {
       setTitleName(taskDataToEdit.titleName || "");
       setCompanyName(taskDataToEdit.companyName || "");
@@ -121,7 +124,12 @@ export default function DetailModal({
               name: t.name,
               material: t.material,
               quantity: t.quantity,
-              attachments: [],
+              attachments: (t.attachments || []).map((file: any) => ({
+                ...file,
+                name: file.originalName,
+                path: file.path,
+                _id: file._id,
+              })),
             }))
           : [{ name: "", material: "", quantity: "", attachments: [] }]
       );
@@ -196,11 +204,36 @@ export default function DetailModal({
       }));
       formData.append("tasks", JSON.stringify(tasksData));
 
-      subtasks.forEach((task, idx) => {
-        task.attachments.forEach((file) =>
-          formData.append(`tasks[${idx}][attachments]`, file)
-        );
-      });
+      for (let idx = 0; idx < subtasks.length; idx++) {
+        for (const file of subtasks[idx].attachments) {
+          console.log("File name before upload:", file.name);
+          const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+          if (!allowedTypes.includes(file.type)) {
+            toast.warning(
+              `ไฟล์ ${file.name} ในรายการที่ ${
+                idx + 1
+              } ไม่รองรับ (รองรับเฉพาะ PDF, JPG, PNG)`,
+              {
+                position: "bottom-right",
+                theme: "colored",
+              }
+            );
+            return;
+          }
+          if (file.size > 5 * 1024 * 1024) {
+            toast.warning(
+              `ไฟล์ ${file.name} ในรายการที่ ${idx + 1} มีขนาดเกิน 5MB`,
+              {
+                position: "bottom-right",
+                theme: "colored",
+              }
+            );
+            return;
+          }
+
+          formData.append(`tasks[${idx}][attachments]`, file);
+        }
+      }
 
       await dispatch(createTask(formData)).unwrap();
 
@@ -218,6 +251,7 @@ export default function DetailModal({
 
       console.log([...formData]);
       onClose();
+      return;
     } catch (err: any) {
       toast.error("เกิดข้อผิดพลาดในการสร้างคำขอ!", {
         position: "bottom-right",
@@ -230,7 +264,31 @@ export default function DetailModal({
         theme: "colored",
         transition: Bounce,
       });
-      console.error(err);
+      console.error("Error Log", err);
+      return;
+    }
+  };
+  const handleDelete = async () => {
+    if (!taskDataToEdit?._id) return;
+
+    const confirmed = window.confirm("แน่ใจหรือไม่ว่าต้องการลบคำขอนี้?");
+    if (!confirmed) return;
+
+    try {
+      await dispatch(deleteTask(taskDataToEdit._id)).unwrap();
+
+      toast.success("ลบคำขอสำเร็จ", {
+        position: "bottom-right",
+        theme: "colored",
+      });
+
+      onClose();
+    } catch (err: any) {
+      toast.error(`เกิดข้อผิดพลาด: ${err.message}`, {
+        position: "bottom-right",
+        theme: "colored",
+      });
+      console.error("Delete error:", err);
     }
   };
 
@@ -269,7 +327,7 @@ export default function DetailModal({
             <div className="flex gap-5">
               <TextField
                 id="outlined-password-input"
-                label="ชื่อรายการ"
+                label="ชื่อบริษัท"
                 required
                 type="text"
                 size="small"
@@ -278,13 +336,21 @@ export default function DetailModal({
                 onChange={(e) => setTitleName(e.target.value)}
               />
               <div className="flex-1">
+                {" "}
+                <Typography
+                  className="absolute top-17"
+                  variant="body2"
+                  sx={{ mb: 0.5, color: "#6b7280" }}
+                >
+                  วันจัดส่ง
+                </Typography>
                 <DatePicker date={selectedDate} setDate={setSelectedDate} />
               </div>
             </div>
             <div className="flex gap-5 mt-5">
               <TextField
                 id="outlined-password-input"
-                label="บริษัท"
+                label="โค๊ดงาน"
                 fullWidth={true}
                 required={true}
                 type="text"
@@ -308,7 +374,6 @@ export default function DetailModal({
                 id="outlined-password-input"
                 label="เลขใบสั่งซื้อ (PO)"
                 fullWidth={true}
-                required={true}
                 type="jobName"
                 value={poNumber}
                 onChange={(e) => setPoNumber(e.target.value)}
@@ -318,7 +383,6 @@ export default function DetailModal({
                 id="outlined-password-input"
                 label="เลขใบเสนอราคา (QT)"
                 fullWidth={true}
-                required={true}
                 value={qtNumber}
                 onChange={(e) => setQtNumber(e.target.value)}
                 type="jobName"
@@ -449,7 +513,7 @@ export default function DetailModal({
               multiple
               onChange={(_, value) => setTaskType(value)}
               options={taskTypes}
-              // getOptionLabel={(option) => option}
+              value={taskType}
               filterSelectedOptions
               renderInput={(params) => (
                 <TextField
@@ -513,10 +577,44 @@ export default function DetailModal({
             </Box> */}
           </form>
           <Box className="flex justify-end mt-2 gap-2">
-            {" "}
-            <Button variant="outlined">บันทึกฉบับร่าง</Button>
-            <Button onClick={handleSubmit} variant="contained">
-              สร้างคำขอผลิตงาน
+            {taskDataToEdit ? (
+              <Button
+                color="error"
+                variant="outlined"
+                onClick={handleDelete}
+                startIcon={<Icon icon="mdi:trash-can-outline" />}
+                sx={{
+                  height: 40,
+                  py: 0,
+                  "& .MuiButton-startIcon": {
+                    margin: 0,
+                  },
+                }}
+              >
+                ลบคำขอ
+              </Button>
+            ) : (
+              <></>
+            )}
+            <Button
+              variant="outlined"
+              sx={{
+                height: 40,
+                py: 0,
+              }}
+            >
+              บันทึกฉบับร่าง
+            </Button>
+
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              sx={{
+                height: 40,
+                py: 0,
+              }}
+            >
+              {taskDataToEdit ? "แก้ไข" : "สร้างคำขอผลิตงาน"}
             </Button>
           </Box>
         </Box>

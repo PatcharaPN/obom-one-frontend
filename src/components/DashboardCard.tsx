@@ -26,7 +26,7 @@ const DashboardCard = ({ count, type }: DashboardCardProps) => {
 
       {/* Center Content */}
       <div className="flex flex-col justify-center items-center flex-1 gap-2">
-        <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-blue-500 via-cyan-400 to-teal-400 text-transparent bg-clip-text drop-shadow-sm">
+        <h1 className="text-5xl md:text-6xl font-normal bg-gradient-to-r from-blue-500 via-cyan-400 to-teal-400 text-transparent bg-clip-text drop-shadow-sm">
           {count}
         </h1>
         <span className="text-gray-600 text-sm md:text-base tracking-wide">

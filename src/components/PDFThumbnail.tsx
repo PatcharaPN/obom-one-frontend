@@ -25,8 +25,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
-  const [isPrinted, setPrinted] = useState(false); // track state ปริ้นต์
-
+  const [isPrinted, setPrinted] = useState(false);
   useEffect(() => {
     const renderPdf = async () => {
       try {
@@ -79,7 +78,34 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
     setPrinted(true);
     onPrint(fileUrl);
   };
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(fileUrl, { mode: "cors" });
+      if (!response.ok) {
+        console.error(
+          "Download failed, status:",
+          response.status,
+          response.statusText
+        );
+        return;
+      }
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
 
+      link.target = "_blank";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
   return (
     <div
       style={{
@@ -174,14 +200,17 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
       )}
 
       {/* Print button */}
+      {/* Print & Download buttons */}
       <div
         style={{
           marginTop: "auto",
           width: "100%",
           display: "flex",
+          gap: "5px",
           justifyContent: "flex-end",
         }}
       >
+        {/* Print Button */}
         <button
           onClick={handlePrint}
           disabled={isPrinted}
@@ -200,6 +229,26 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
         >
           <Icon icon="mingcute:print-line" width={18} height={18} />
           {isPrinted ? "ปริ้นต์แล้ว" : "ปริ้นต์"}
+        </button>
+
+        {/* Download Button */}
+        <button
+          onClick={handleDownload}
+          style={{
+            marginTop: 8,
+            padding: "4px 10px",
+            borderRadius: 6,
+            backgroundColor: "#10b981", // green
+            color: "#fff",
+            fontSize: 12,
+            textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <Icon icon="mdi:download" width={18} height={18} />
+          ดาวน์โหลด
         </button>
       </div>
     </div>

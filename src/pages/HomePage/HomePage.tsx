@@ -15,11 +15,15 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Collapse from "@mui/material/Collapse";
 import { useAppDispatch, useAppSelector } from "../../store";
-import { fetchTaskById, fetchTasks } from "../../features/redux/TaskSlice";
+import {
+  clearCurrentTask,
+  fetchTaskById,
+  fetchTasks,
+} from "../../features/redux/TaskSlice";
 import TaskDetail from "../../components/TaskDetail";
 import { renderStatusBadge } from "../../components/StatusBadge";
 import { useNavigate } from "react-router-dom";
-import { formatThaiDate } from "../../utils/formatThaiDate";
+import { formatThaiDate, formatThaiDateTime } from "../../utils/formatThaiDate";
 import DashboardCard from "../../components/DashboardCard";
 import { Bounce, toast } from "react-toastify";
 
@@ -35,8 +39,8 @@ const HomePage = () => {
   const [openInLine, setOpenInLine] = useState(true);
   const [taskDataToEdit, setTaskDataToEdit] = useState<any>(null);
 
-  const pendingTasks = (tasks || []).filter((t) => !t.isApprove);
-  const inLineTasks = (tasks || []).filter((t) => t.isApprove);
+  const pendingTasks = (tasks || []).filter((t: any) => !t.isApprove);
+  const inLineTasks = (tasks || []).filter((t: any) => t.isApprove);
 
   const user = useAppSelector((state) => state.auth.user);
   const createRoleCheck = user?.role === "Sale Support" || "IT";
@@ -76,6 +80,7 @@ const HomePage = () => {
   };
 
   const handleCreateTask = () => {
+    dispatch(clearCurrentTask());
     if (!createRoleCheck) {
       console.log("ไม่อนุญาตให้สร้างคำขอใหม่");
       toast.error("คุณไม่มีสิทธิ์สร้างคำขอใหม่", {
@@ -94,7 +99,6 @@ const HomePage = () => {
     setTaskDataToEdit(null);
     setIsDetailModalOpen(true);
   };
-  console.log(createRoleCheck);
 
   return (
     <div className="grid grid-rows-[360px_1fr] gap-4">
@@ -167,7 +171,7 @@ const HomePage = () => {
                   />
                 </TableCell>
                 <TableCell>หัวข้อ</TableCell>
-                <TableCell>บริษัท</TableCell>
+                <TableCell>รหัสการผลิต</TableCell>
                 <TableCell>วัตถุดิบ</TableCell>
                 <TableCell>กำหนดส่ง</TableCell>
                 <TableCell>ผู้ดูแล</TableCell>
@@ -291,6 +295,7 @@ const HomePage = () => {
                 <TableCell>กำหนดส่ง</TableCell>
                 <TableCell>ผู้ดูแล</TableCell>
                 <TableCell>สถานะ</TableCell>
+                <TableCell>วัน/เวลาที่อนุมัติ</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -337,6 +342,7 @@ const HomePage = () => {
                       อนุมัติขึ้นงานแล้ว
                     </span>
                   </TableCell>
+                  <TableCell>{formatThaiDateTime(row.approveDate)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -350,6 +356,7 @@ const HomePage = () => {
           open={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           taskDataToEdit={taskDataToEdit}
+          setTaskDataToEdit={setTaskDataToEdit}
         />
       )}
     </div>
