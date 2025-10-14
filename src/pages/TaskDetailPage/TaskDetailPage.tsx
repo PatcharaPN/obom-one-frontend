@@ -4,7 +4,7 @@ import { fetchTaskById } from "../../features/redux/TaskSlice";
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { renderStatusBadge } from "../../components/StatusBadge";
-import { formatThaiDate } from "../../utils/formatThaiDate";
+import { formatThaiDate, formatThaiDateTime } from "../../utils/formatThaiDate";
 import PdfThumbnail from "../../components/PDFThumbnail";
 import SuccessModal from "../../components/SuccessPopup";
 import axios from "axios";
@@ -129,7 +129,9 @@ const TaskDetailPage = () => {
                 currentTask.isApprove ? "text-green-600" : "text-orange-600"
               }`}
             >
-              {currentTask.isApprove ? "อนุมัติแล้ว" : "รออนุมัติ"}
+              {currentTask.isApprove
+                ? `อนุมัติแล้ว (${formatThaiDateTime(currentTask.approveDate)})`
+                : "รออนุมัติ"}
             </span>
           </p>
 

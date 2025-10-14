@@ -48,6 +48,17 @@ const HomePage = () => {
     dispatch(fetchTasks());
   }, [dispatch]);
 
+  //Auto Dispatch
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        dispatch(fetchTasks());
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
   // เมื่อดึง currentTask มาและเปิด modal
   useEffect(() => {
     if (currentTask && isDetailModalOpen && !taskDataToEdit) {
@@ -118,9 +129,10 @@ const HomePage = () => {
             onClick={handleCreateTask}
           />
           <PrimaryButton
-            label="ส่งออก Excel"
+            label="รีเฟรชข้อมูล"
+            icon="mdi:refresh"
             variant="secondary"
-            onClick={() => console.log("Export all tasks")}
+            onClick={() => dispatch(fetchTasks())}
           />
         </div>
 
