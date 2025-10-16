@@ -52,11 +52,18 @@ export const fetchAllTask = createAsyncThunk<Task[]>(
     return res.data;
   }
 );
+
 export const updateTask = createAsyncThunk(
   "task/updateTask",
-  async ({ id, data }: { id: string; data: FormData }) => {
-    const res = await axiosInstance.put(`/update/${id}`, data);
-    return res.data;
+  async ({ id, data }: { id: string; data: FormData }, thunkAPI) => {
+    try {
+      const response = await axiosInstance.put(`/task/update/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error?.response?.data || "เกิดข้อผิดพลาด"
+      );
+    }
   }
 );
 export const deleteTask = createAsyncThunk(
@@ -143,6 +150,26 @@ const taskSlice = createSlice({
         }
       })
       .addCase(deleteTask.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updateTask.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateTask.fulfilled, (state, action) => {
+        state.loading = false;
+
+        // แทนที่ task เดิมด้วยตัวใหม่จาก action.payload
+        const updatedTask = action.payload;
+        const index = state.tasks.findIndex(
+          (task) => task._id === updatedTask._id
+        );
+
+        if (index !== -1) {
+          state.tasks[index] = updatedTask;
+        }
+      })
+      .addCase(updateTask.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

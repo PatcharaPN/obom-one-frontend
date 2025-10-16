@@ -36,7 +36,7 @@ const HomePage = () => {
   const [selectedInLine, setSelectedInLine] = useState<string[]>([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [openPending, setOpenPending] = useState(true);
-  const [openInLine, setOpenInLine] = useState(true);
+  const [openInLine, setOpenInLine] = useState(false);
   const [taskDataToEdit, setTaskDataToEdit] = useState<any>(null);
 
   const pendingTasks = (tasks || []).filter((t: any) => !t.isApprove);
@@ -166,7 +166,7 @@ const HomePage = () => {
         </IconButton>
       </div>
       <Collapse in={openPending}>
-        <TableContainer component={Paper} className="max-h-[250px]">
+        <TableContainer component={Paper} className="max-h-[550px]">
           <Table stickyHeader>
             <TableHead>
               <TableRow className="bg-blue-400/5">
@@ -182,9 +182,10 @@ const HomePage = () => {
                     }
                   />
                 </TableCell>
-                <TableCell>หัวข้อ</TableCell>
+                <TableCell>บริษัท</TableCell>
+                <TableCell>ชนิดงาน</TableCell>
                 <TableCell>รหัสการผลิต</TableCell>
-                <TableCell>วัตถุดิบ</TableCell>
+                {/* <TableCell>วัตถุดิบ</TableCell> */}
                 <TableCell>กำหนดส่ง</TableCell>
                 <TableCell>ผู้ดูแล</TableCell>
                 <TableCell>สถานะ</TableCell>
@@ -221,10 +222,19 @@ const HomePage = () => {
                     </TableCell>
                     <TableCell>{row.companyName}</TableCell>
                     <TableCell>
+                      {row.tasks.slice(0, 2).map((t, idx) => (
+                        <p key={idx} className="inline-block mr-1">
+                          {t.taskID}
+                          {idx < Math.min(row.tasks.length, 2) - 1 ? ", " : ""}
+                        </p>
+                      ))}
+                      {row.tasks.length > 2 && <span>...</span>}
+                    </TableCell>
+                    {/* <TableCell>
                       {row.tasks && row.tasks.length > 0
                         ? row.tasks.map((t) => t.material).join(", ")
                         : "ไม่มีการขึ้นงาน"}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       {formatThaiDate(row.dueDate?.toLocaleString() || "")}
                     </TableCell>
@@ -253,6 +263,7 @@ const HomePage = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          dispatch(clearCurrentTask());
                           setIsDetailModalOpen(true);
                           setTaskDataToEdit(null);
                           dispatch(fetchTaskById(row._id || ""));
@@ -302,8 +313,8 @@ const HomePage = () => {
                   />
                 </TableCell>
                 <TableCell>หัวข้อ</TableCell>
-                <TableCell>บริษัท</TableCell>
-                <TableCell>วัตถุดิบ</TableCell>
+                <TableCell>ชนิดงาน</TableCell>
+                <TableCell>รหัสการผลิต</TableCell>
                 <TableCell>กำหนดส่ง</TableCell>
                 <TableCell>ผู้ดูแล</TableCell>
                 <TableCell>สถานะ</TableCell>

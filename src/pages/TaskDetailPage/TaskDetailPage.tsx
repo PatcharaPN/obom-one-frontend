@@ -90,9 +90,20 @@ const TaskDetailPage = () => {
           </div>
 
           <div className="flex flex-wrap gap-5 mb-2 text-gray-700">
+            <div className="flex gap-2">
+              {" "}
+              <span className="font-semibold">ประเภทงาน:</span>{" "}
+              <p>
+                {currentTask.companyName === "J"
+                  ? "Jig Gauge"
+                  : currentTask.companyName === "S"
+                  ? "Single Gauge"
+                  : currentTask.companyName}
+              </p>
+            </div>
             <p>
-              <span className="font-semibold">รหัสการผลิต:</span>{" "}
-              {currentTask.companyName} ({currentTask.companyPrefix})
+              <span className="font-semibold">ชื่อบริษัทย่อ:</span> (
+              {currentTask.companyPrefix})
             </p>
             <p>
               <span className="font-semibold">PO/QT:</span>{" "}
@@ -170,7 +181,7 @@ const TaskDetailPage = () => {
 
       {/* Scrollable Content */}
       <div className="p-6 bg-gray-200 overflow-auto">
-        <p className="mt-4 text-gray-600 flex gap-5 items-center">
+        <div className="mt-4 text-gray-600 flex flex-wrap gap-4">
           {currentTask.tasks?.map((subtask, sIdx) =>
             subtask.attachments?.map((file, idx) => {
               console.log(
@@ -178,18 +189,23 @@ const TaskDetailPage = () => {
                 file
               );
               return (
-                <PdfThumbnail
-                  key={`${sIdx}-${idx}`}
-                  filePath={`${import.meta.env.VITE_BASE_URL}/api${file.path}`}
-                  fileUrl={`${import.meta.env.VITE_BASE_URL}/api${file.path}`}
-                  filename={file.originalName}
-                  material={subtask.material}
-                  onPrint={() => handleFilePrinted(file.path)}
-                />
+                <div key={`${sIdx}-${idx}`} className="basis-1/6">
+                  <PdfThumbnail
+                    taskCode={subtask.taskID}
+                    quantity={subtask.quantity}
+                    filePath={`${import.meta.env.VITE_BASE_URL}/api${
+                      file.path
+                    }`}
+                    fileUrl={`${import.meta.env.VITE_BASE_URL}/api${file.path}`}
+                    filename={file.originalName}
+                    material={subtask.material}
+                    onPrint={() => handleFilePrinted(file.path)}
+                  />
+                </div>
               );
             })
           )}
-        </p>
+        </div>
       </div>
 
       <SuccessModal open={successOpen} onClose={() => setSuccessOpen(false)} />

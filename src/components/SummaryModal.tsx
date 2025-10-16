@@ -23,8 +23,10 @@ interface SubTask {
 
 interface Task {
   _id: string;
+  titleName: string;
   companyName: string;
   poNumber?: string;
+  qtNumber?: string;
   quantity?: number;
   sale?: IUser;
   tasks?: SubTask[];
@@ -108,8 +110,10 @@ const SummaryModal = ({
               ) : (
                 tasksForDate.map((task) => (
                   <TableRow key={task._id}>
-                    <TableCell>{task.companyName}</TableCell>
-                    <TableCell>{task.poNumber || "-"}</TableCell>
+                    <TableCell>{task.titleName}</TableCell>
+                    <TableCell>
+                      {task.poNumber || "-"} / {task.qtNumber || "-"}
+                    </TableCell>
                     <TableCell>
                       {task.quantity ??
                         (task.tasks?.reduce((sum, t) => sum + t.quantity, 0) ||

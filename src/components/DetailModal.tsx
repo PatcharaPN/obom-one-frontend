@@ -14,7 +14,11 @@ import TextareaAutosize from "@mui/material/TextareaAutosize";
 import Button from "@mui/material/Button";
 import Autocomplete from "@mui/material/Autocomplete";
 
-import { createTask, deleteTask } from "../../src/features/redux/TaskSlice";
+import {
+  createTask,
+  deleteTask,
+  updateTask,
+} from "../../src/features/redux/TaskSlice";
 import { useAppDispatch, useAppSelector } from "../store";
 import { useEffect, useState } from "react";
 import { fetchSale } from "../features/redux/UserSlice";
@@ -58,8 +62,8 @@ const style = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: "90%",
-  maxWidth: 650,
+  width: "90%", // ✅ กำหนดความกว้างไว้ที่ 90%
+  maxWidth: 800,
   maxHeight: "90vh",
   bgcolor: "background.paper",
   boxShadow: 24,
@@ -92,16 +96,20 @@ export default function DetailModal({
   const [qtNumber, setQtNumber] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [sale, setSale] = useState(""); // user id
+  const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<string[]>(
+    []
+  );
   const [description, setDescription] = useState("");
   const [taskType, setTaskType] = useState<string[]>(["งานใหม่"]);
   const [subtasks, setSubTasks] = useState<
     {
       name: string;
+      taskID: string;
       material: string;
       quantity: number | "";
       attachments: File[];
     }[]
-  >([{ name: "", material: "", quantity: "", attachments: [] }]);
+  >([{ name: "", taskID: "", material: "", quantity: "", attachments: [] }]);
   useEffect(() => {
     dispatch(fetchSale());
   }, [dispatch]);
@@ -114,7 +122,7 @@ export default function DetailModal({
       setCompanyPrefix(taskDataToEdit.companyPrefix || "");
       setPoNumber(taskDataToEdit.poNumber || "");
       setQtNumber(taskDataToEdit.qtNumber || "");
-      setSelectedDate(taskDataToEdit.dueDate || "");
+
       setSale(taskDataToEdit.sale?._id || "");
       setDescription(taskDataToEdit.description || "");
       setTaskType(taskDataToEdit.taskType || ["งานใหม่"]);
@@ -122,6 +130,7 @@ export default function DetailModal({
         taskDataToEdit.tasks?.length
           ? taskDataToEdit.tasks.map((t: any) => ({
               name: t.name,
+              taskID: t.taskID,
               material: t.material,
               quantity: t.quantity,
               attachments: (t.attachments || []).map((file: any) => ({
@@ -133,6 +142,14 @@ export default function DetailModal({
             }))
           : [{ name: "", material: "", quantity: "", attachments: [] }]
       );
+      if (taskDataToEdit.dueDate) {
+        const dateObj = new Date(taskDataToEdit.dueDate);
+
+        const formattedDate = dateObj.toISOString().split("T")[0];
+        setSelectedDate(formattedDate);
+      } else {
+        setSelectedDate("");
+      }
     }
   }, [taskDataToEdit]);
   const handleTaskChange = (index: number, newData: any) => {
@@ -145,7 +162,7 @@ export default function DetailModal({
   const addTaskRow = () => {
     setSubTasks((prev) => [
       ...prev,
-      { name: "", material: "", quantity: "", attachments: [] },
+      { name: "", taskID: "", material: "", quantity: "", attachments: [] },
     ]);
   };
   const removeRow = (taskIndex: number) => {
@@ -194,11 +211,15 @@ export default function DetailModal({
       formData.append("sale", sale);
       formData.append("dueDate", selectedDate);
       formData.append("description", description || "");
-
+      formData.append(
+        "deletedAttachmentIds",
+        JSON.stringify(deletedAttachmentIds)
+      );
       taskType.forEach((t) => formData.append("taskType[]", t));
 
       const tasksData = subtasks.map((task) => ({
         name: task.name,
+        taskID: task.taskID,
         material: task.material,
         quantity: task.quantity,
       }));
@@ -206,7 +227,9 @@ export default function DetailModal({
 
       for (let idx = 0; idx < subtasks.length; idx++) {
         for (const file of subtasks[idx].attachments) {
-          console.log("File name before upload:", file.name);
+          // ✅ Skip ไฟล์เก่าที่ไม่ได้มาจาก File input
+          if (!(file instanceof File)) continue;
+
           const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
           if (!allowedTypes.includes(file.type)) {
             toast.warning(
@@ -220,6 +243,7 @@ export default function DetailModal({
             );
             return;
           }
+
           if (file.size > 5 * 1024 * 1024) {
             toast.warning(
               `ไฟล์ ${file.name} ในรายการที่ ${idx + 1} มีขนาดเกิน 5MB`,
@@ -291,7 +315,95 @@ export default function DetailModal({
       console.error("Delete error:", err);
     }
   };
+  const handleRemoveFileFromDB = (fileId: string) => {
+    setDeletedAttachmentIds((prev) => [...prev, fileId]);
+  };
+  const handleUpdate = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("titleName", titleName);
+      formData.append("companyName", companyName);
+      formData.append("companyPrefix", companyPrefix);
+      formData.append("poNumber", poNumber);
+      formData.append("qtNumber", qtNumber);
+      formData.append("sale", sale);
+      formData.append("dueDate", selectedDate);
+      formData.append("description", description || "");
+      formData.append(
+        "deletedAttachmentIds",
+        JSON.stringify(deletedAttachmentIds)
+      );
+      taskType.forEach((t) => formData.append("taskType[]", t));
 
+      // สร้าง tasksData โดยรวมไฟล์เก่า (metadata) ไว้ด้วย
+      const tasksData = subtasks.map((task) => ({
+        name: task.name,
+        taskID: task.taskID,
+        material: task.material,
+        quantity: task.quantity,
+        attachments: task.attachments
+          .filter((file) => !(file instanceof File))
+          .map((file: any) => ({
+            _id: file._id,
+            originalName: file.originalName || file.name,
+            savedName: file.savedName,
+            path: file.path,
+            mimetype: file.mimetype,
+            size: file.size,
+          })),
+      }));
+      formData.append("tasks", JSON.stringify(tasksData));
+
+      // Append ไฟล์ใหม่จริง ๆ เท่านั้น
+      for (let idx = 0; idx < subtasks.length; idx++) {
+        for (const file of subtasks[idx].attachments) {
+          if (!(file instanceof File)) continue;
+
+          const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+          if (!allowedTypes.includes(file.type)) {
+            toast.warning(
+              `ไฟล์ ${file.name} ในรายการที่ ${idx + 1} ไม่รองรับ`,
+              {
+                position: "bottom-right",
+                theme: "colored",
+              }
+            );
+            return;
+          }
+
+          if (file.size > 5 * 1024 * 1024) {
+            toast.warning(
+              `ไฟล์ ${file.name} ในรายการที่ ${idx + 1} มีขนาดเกิน 5MB`,
+              {
+                position: "bottom-right",
+                theme: "colored",
+              }
+            );
+            return;
+          }
+
+          formData.append(`tasks[${idx}][attachments]`, file);
+        }
+      }
+
+      await dispatch(
+        updateTask({ id: taskDataToEdit._id, data: formData })
+      ).unwrap();
+
+      toast.success("แก้ไขคำขอสำเร็จ", {
+        position: "bottom-right",
+        theme: "colored",
+      });
+
+      onClose();
+    } catch (err) {
+      toast.error("เกิดข้อผิดพลาดในการอัปเดตคำขอ!", {
+        position: "bottom-right",
+        theme: "colored",
+      });
+      console.error("Update error:", err);
+    }
+  };
   return (
     <Modal
       aria-labelledby="spring-modal-title"
@@ -348,16 +460,23 @@ export default function DetailModal({
               </div>
             </div>
             <div className="flex gap-5 mt-5">
-              <TextField
-                id="outlined-password-input"
-                label="โค๊ดงาน"
-                fullWidth={true}
-                required={true}
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                size="small"
-              />
+              {" "}
+              <FormControl fullWidth size="small" required>
+                <InputLabel id="job-code-label" sx={{ color: "gray" }}>
+                  ชนิดงาน
+                </InputLabel>
+                <Select
+                  labelId="job-code-label"
+                  id="job-code-select"
+                  value={companyName}
+                  label="ชนิดงาน"
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  displayEmpty
+                >
+                  <MenuItem value="S">S</MenuItem>
+                  <MenuItem value="J">J</MenuItem>
+                </Select>
+              </FormControl>
               <TextField
                 id="outlined-password-input"
                 label="ชื่อย่อ"
@@ -450,6 +569,7 @@ export default function DetailModal({
                     key={idx}
                     index={idx}
                     data={task}
+                    onRemoveAttachmentFromDB={handleRemoveFileFromDB}
                     onDelete={removeRow}
                     onChange={handleTaskChange}
                   />
@@ -534,6 +654,7 @@ export default function DetailModal({
             <TextareaAutosize
               aria-label="empty textarea"
               placeholder="รายละเอียดเพิ่มเติม"
+              onChange={(e) => setDescription(e.target.value)}
               value={description}
               style={{
                 width: "100%",
@@ -605,17 +726,29 @@ export default function DetailModal({
             >
               บันทึกฉบับร่าง
             </Button>
-
-            <Button
-              onClick={handleSubmit}
-              variant="contained"
-              sx={{
-                height: 40,
-                py: 0,
-              }}
-            >
-              {taskDataToEdit ? "แก้ไข" : "สร้างคำขอผลิตงาน"}
-            </Button>
+            {taskDataToEdit ? (
+              <Button
+                onClick={handleUpdate}
+                variant="contained"
+                sx={{
+                  height: 40,
+                  py: 0,
+                }}
+              >
+                แก้ไข
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                variant="contained"
+                sx={{
+                  height: 40,
+                  py: 0,
+                }}
+              >
+                สร้างคำขอ
+              </Button>
+            )}
           </Box>
         </Box>
       </Fade>

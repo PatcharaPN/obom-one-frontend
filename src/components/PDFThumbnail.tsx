@@ -8,8 +8,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 interface PdfThumbnailProps {
   fileUrl: string;
   width?: number;
+  taskCode?: string;
   height?: number;
   filename: string;
+  quantity?: string | number;
   filePath: string;
   material?: string;
   onPrint: (filename: string) => void;
@@ -20,7 +22,9 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   width = 200,
   height = 220,
   filename,
+  taskCode,
   material,
+  quantity,
   onPrint,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -111,7 +115,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
       style={{
         position: "relative",
         width: width + 30,
-        height: height + 120,
+        // height: height + 120,
         padding: 10,
         display: "flex",
         flexDirection: "column",
@@ -160,44 +164,67 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
           backgroundColor: "#f5f5f5",
         }}
       />
-
-      {/* Filename */}
-      <p
-        style={{
-          width: "100%",
-          margin: 0,
-          fontSize: 12,
-          fontWeight: 500,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-        title={filename}
-      >
-        {filename}
-      </p>
-
-      {/* Material badge */}
-      {material && (
-        <div
+      <div className="flex flex-col w-full items-start pl-2">
+        {" "}
+        {/* หรือเอา items-start ออกก็ได้ */}
+        <p
           style={{
-            marginTop: 4,
-            padding: "2px 6px",
-            fontSize: 10,
-            borderRadius: 8,
-            backgroundColor: "#e0f2ff",
-            color: "#0369a1",
-            width: "fit-content",
-            maxWidth: "100%",
+            width: "100%",
+            margin: 0,
+            fontSize: 12,
+            fontWeight: "bold",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
+            textAlign: "left", // ✅ ชิดซ้าย
           }}
-          title={material}
+          title={filename}
         >
-          {material}
+          {filename}
+        </p>
+        <p
+          style={{
+            width: "100%",
+            margin: 0,
+            fontSize: 15,
+            fontWeight: 500,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            textAlign: "left", // ✅ ชิดซ้าย
+          }}
+          title={taskCode}
+        >
+          {taskCode}
+        </p>
+        <div className="flex justify-between w-full">
+          {" "}
+          {material && (
+            <div
+              style={{
+                marginTop: 4,
+                padding: "2px 6px",
+                fontSize: 10,
+                borderRadius: 8,
+                backgroundColor: "#e0f2ff",
+                color: "#0369a1",
+                width: "fit-content",
+                maxWidth: "100%",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                textAlign: "left", // ✅ ชิดซ้าย
+              }}
+              title={material}
+            >
+              {material}
+            </div>
+          )}
+          <p>{quantity} ชิ้น</p>
         </div>
-      )}
+      </div>
+
+      {/* Filename */}
 
       {/* Print button */}
       {/* Print & Download buttons */}

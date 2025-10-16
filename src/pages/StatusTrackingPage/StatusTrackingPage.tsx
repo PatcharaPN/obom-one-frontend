@@ -20,6 +20,7 @@ import { formatThaiDate, formatThaiDateTime } from "../../utils/formatThaiDate";
 import { Icon } from "@iconify/react";
 import SummaryModal from "../../components/SummaryModal";
 import SearchBar from "../../components/Searchbar";
+import { useNavigate } from "react-router-dom";
 
 const getLocalDayStr = (date: Date) => {
   return toZonedTime(date, "Asia/Bangkok").toLocaleDateString("en-CA");
@@ -27,6 +28,7 @@ const getLocalDayStr = (date: Date) => {
 
 const StatusTrackingPage = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const tasks = useAppSelector((state) => state.task.summaryTasks) || [];
 
   // --- เพิ่ม state search ---
@@ -209,7 +211,10 @@ const StatusTrackingPage = () => {
               </TableHead>
               <TableBody>
                 {dayTasks.map((t) => (
-                  <TableRow key={t._id}>
+                  <TableRow
+                    key={t._id}
+                    onClick={() => navigate(`/Task/${t._id}`)}
+                  >
                     <TableCell>{t.titleName || "-"}</TableCell>
                     <TableCell>{t.companyName || "-"}</TableCell>
                     <TableCell>
@@ -236,11 +241,19 @@ const StatusTrackingPage = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="px-2 py-1 bg-[#abffbc] text-[#147800] rounded-full text-sm">
-                        อนุมัติแล้ว
-                      </span>
+                      {t.isApprove ? (
+                        <span className="px-2 py-1 bg-[#abffbc] text-[#147800] rounded-full text-sm">
+                          อนุมัติขึ้นงานแล้ว
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-[#FFF4E5] text-[#FF8C00] rounded-full text-sm">
+                          รอการอนุมัติ
+                        </span>
+                      )}
                     </TableCell>
-                    <TableCell>{formatThaiDateTime(t.approveDate)}</TableCell>
+                    <TableCell>
+                      {t.approveDate ? formatThaiDateTime(t.approveDate) : "-"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -272,7 +285,11 @@ const StatusTrackingPage = () => {
           </TableHead>
           <TableBody>
             {filteredTasks.map((t) => (
-              <TableRow key={t._id}>
+              <TableRow
+                key={t._id}
+                className="cursor-pointer"
+                onClick={() => navigate(`/Task/${t._id}`)}
+              >
                 <TableCell>{t.titleName || "-"}</TableCell>
                 <TableCell>{t.companyName || "-"}</TableCell>
                 <TableCell>
@@ -302,11 +319,20 @@ const StatusTrackingPage = () => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="px-2 py-1 bg-[#abffbc] text-[#147800] rounded-full text-sm">
-                    อนุมัติแล้ว
-                  </span>
+                  {t.isApprove ? (
+                    <span className="px-2 py-1 bg-[#abffbc] text-[#147800] rounded-full text-sm">
+                      อนุมัติขึ้นงานแล้ว
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 bg-[#FFF4E5] text-[#FF8C00] rounded-full text-sm">
+                      รอการอนุมัติ
+                    </span>
+                  )}
                 </TableCell>
-                <TableCell>{formatThaiDateTime(t.approveDate)}</TableCell>
+
+                <TableCell>
+                  {t.approveDate ? formatThaiDateTime(t.approveDate) : "-"}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

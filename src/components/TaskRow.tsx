@@ -5,15 +5,23 @@ export interface TaskRowProps {
   index: number;
   data: {
     name: string;
+    taskID: string;
     material: string;
     quantity: number | "";
-    attachments: File[];
+    attachments: (File | { name: string; _id: string; path: string })[];
   };
   onDelete: (index: number) => void;
   onChange: (index: number, newData: any) => void;
+  onRemoveAttachmentFromDB?: (fileId: string) => void;
 }
 
-const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
+const TaskRow = ({
+  index,
+  data,
+  onChange,
+  onDelete,
+  onRemoveAttachmentFromDB,
+}: TaskRowProps) => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
     const newFiles = Array.from(event.target.files);
@@ -24,6 +32,12 @@ const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
   };
 
   const removeAttachment = (fileIndex: number) => {
+    const fileToRemove = data.attachments[fileIndex];
+
+    if (!(fileToRemove instanceof File) && fileToRemove._id) {
+      onRemoveAttachmentFromDB?.(fileToRemove._id);
+    }
+
     const newAttachments = data.attachments.filter((_, i) => i !== fileIndex);
     onChange(index, { ...data, attachments: newAttachments });
   };
@@ -43,7 +57,13 @@ const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
           placeholder="ชื่อชิ้นงาน"
           onChange={(e) => handleFieldChange("name", e.target.value)}
         />
-
+        <input
+          type="text"
+          value={data.taskID}
+          className="flex-1 min-w-0 px-2 outline-none border-r border-gray-200"
+          placeholder="รหัสการผลิต"
+          onChange={(e) => handleFieldChange("taskID", e.target.value)}
+        />
         {/* Material เป็น TextField select */}
 
         <input
@@ -58,6 +78,7 @@ const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
         {/* จำนวน */}
         <input
           type="number"
+          min={1}
           className="flex-1 min-w-0 px-2 outline-none border-r border-gray-200"
           placeholder="จำนวน"
           value={data.quantity}
@@ -95,7 +116,10 @@ const TaskRow = ({ index, data, onChange, onDelete }: TaskRowProps) => {
             >
               <span className="text-sm">{file.name}</span>
               <button
-                onClick={() => removeAttachment(idx)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  removeAttachment(idx);
+                }}
                 className="text-red-500 flex items-center gap-1"
               >
                 <Icon icon="tabler:trash" width={16} height={16} />

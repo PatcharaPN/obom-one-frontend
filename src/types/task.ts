@@ -29,6 +29,7 @@ export interface Task {
 }
 export interface SubTask {
   name: string;
+  taskID: string;
   material: string;
   quantity: number;
   attachments: Attachment[];
