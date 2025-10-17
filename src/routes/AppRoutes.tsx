@@ -49,7 +49,13 @@ export const AppRoutes = () => {
           path="/print/*"
           element={
             <PrivateRoute>
-              <PDFPrintPage fileUrl={""} />
+              <PDFPrintPage
+                fileUrl={""}
+                isOpen={false}
+                onClose={function (): void {
+                  throw new Error("Function not implemented.");
+                }}
+              />
             </PrivateRoute>
           }
         />

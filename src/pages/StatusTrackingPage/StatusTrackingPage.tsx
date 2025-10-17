@@ -55,14 +55,16 @@ const StatusTrackingPage = () => {
       const qoNumber = t.qtNumber?.toLowerCase() || ""; // สมมติมี field นี้
       const saleName = t.sale?.name?.toLowerCase() || "";
       const saleSurname = t.sale?.surname?.toLowerCase() || "";
-
+      const taskIDs =
+        t.tasks?.map((sub: any) => sub.taskID?.toLowerCase())?.join(" ") || "";
       return (
         title.includes(lowerSearch) ||
         company.includes(lowerSearch) ||
         poNumber.includes(lowerSearch) ||
         qoNumber.includes(lowerSearch) ||
         saleName.includes(lowerSearch) ||
-        saleSurname.includes(lowerSearch)
+        saleSurname.includes(lowerSearch) ||
+        taskIDs.includes(lowerSearch)
       );
     });
   }, [searchTerm, tasks]);
@@ -81,7 +83,9 @@ const StatusTrackingPage = () => {
 
     // initial collapse state
     const initialOpen: { [date: string]: boolean } = {};
-    Object.keys(grouped).forEach((day) => (initialOpen[day] = false));
+    Object.keys(grouped).forEach((day) => {
+      initialOpen[day] = day === todayStr; // true เฉพาะวันนี้
+    });
     setOpenDays(initialOpen);
   }, [filteredTasks]);
 
@@ -179,7 +183,7 @@ const StatusTrackingPage = () => {
       </div>
 
       {/* Collapse */}
-      <Collapse in={!openDays[day]}>
+      <Collapse in={openDays[day]}>
         <div className="flex justify-end mb-2">
           <button
             className="flex gap-2 items-center cursor-pointer hover:bg-amber-700 transition-all hover:text-white border border-amber-600 rounded-xl p-2 text-sm bg-amber-400/20 text-amber-700"
@@ -300,13 +304,11 @@ const StatusTrackingPage = () => {
               >
                 <TableCell>{t.titleName || "-"}</TableCell>
                 <TableCell>
-                  {t.companyName === "J" ? (
-                    <p>JIG Gauge (J)</p>
-                  ) : t.companyName === "S" ? (
-                    <p>Single Gauge (S)</p>
-                  ) : (
-                    <p>ไม่ระบุ</p>
-                  )}
+                  {t.tasks.slice(0, tasks.length).map((t: any, idx: any) => (
+                    <p key={idx} className="inline-block mr-1">
+                      {t.taskID}
+                    </p>
+                  ))}
                 </TableCell>
                 {/* <TableCell>
                   {t.tasks?.map((sub: any) => sub.material).join(", ") ??

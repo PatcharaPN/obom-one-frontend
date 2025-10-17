@@ -15,7 +15,7 @@ export const fetchTasks = createAsyncThunk<Task[]>(
   async (_, thunkAPI) => {
     try {
       const res = await axiosInstance.get("/task/getAllTasks");
-      console.log(res.data);
+
       return res.data;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message);

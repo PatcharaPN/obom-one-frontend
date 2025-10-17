@@ -7,7 +7,7 @@ export function formatThaiDate(dateString: string): string {
   }).format(date);
 }
 
-export const formatThaiDateTime = (dateStr: string | Date) => {
+export const formatThaiDateTime = (dateStr: string | Date | any) => {
   const date = new Date(dateStr);
   return date.toLocaleString("th-TH", {
     day: "2-digit",

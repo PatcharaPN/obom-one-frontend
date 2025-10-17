@@ -24,7 +24,7 @@ export interface Task {
   dueDate?: Date;
   isApprove: boolean;
   approveDate: string;
-  createdAt?: string;
+  createdAt?: Date;
   updatedAt?: string;
 }
 export interface SubTask {

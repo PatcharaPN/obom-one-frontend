@@ -7,7 +7,15 @@ const PDFPrintPageWrapper: React.FC = () => {
 
   const fileUrl = `${import.meta.env.VITE_BASE_URL}/api/uploads/task/${taskId}`;
 
-  return <PDFPrintPage fileUrl={fileUrl} />;
+  return (
+    <PDFPrintPage
+      fileUrl={fileUrl}
+      isOpen={false}
+      onClose={function (): void {
+        throw new Error("Function not implemented.");
+      }}
+    />
+  );
 };
 
 export default PDFPrintPageWrapper;

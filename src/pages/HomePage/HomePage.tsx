@@ -43,7 +43,7 @@ const HomePage = () => {
   const inLineTasks = (tasks || []).filter((t: any) => t.isApprove);
 
   const user = useAppSelector((state) => state.auth.user);
-  const createRoleCheck = user?.role === "Sale Support" || "IT";
+  const createRoleCheck = user?.role === "Sale Support" || user?.role === "IT";
   useEffect(() => {
     dispatch(fetchTasks());
   }, [dispatch]);
@@ -189,6 +189,7 @@ const HomePage = () => {
                 <TableCell>กำหนดส่ง</TableCell>
                 <TableCell>ผู้ดูแล</TableCell>
                 <TableCell>สถานะ</TableCell>
+                <TableCell>วัน/เวลาที่สร้างคำขอ</TableCell>
                 <TableCell>จัดการ</TableCell>
               </TableRow>
             </TableHead>
@@ -261,12 +262,13 @@ const HomePage = () => {
                         />
                         {row.sale.name} {row.sale.surname}
                       </div>
-                    </TableCell>
+                    </TableCell>{" "}
                     <TableCell>
                       <span className="px-2 py-1 bg-[#FFF4E5] text-[#FF8C00] rounded-full text-sm">
                         รอการอนุมัติ
                       </span>
-                    </TableCell>
+                    </TableCell>{" "}
+                    <TableCell>{formatThaiDateTime(row.createdAt)}</TableCell>
                     <TableCell>
                       <button
                         onClick={(e) => {

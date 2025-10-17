@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import { Icon } from "@iconify/react";
+import PDFPrintModal from "../pages/PDFPrintPage/PDFPrintPage";
+import ReactDOM from "react-dom";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
@@ -30,6 +32,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
   const [isPrinted, setPrinted] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
     const renderPdf = async () => {
       try {
@@ -75,7 +78,6 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
 
     renderPdf();
   }, [fileUrl, width, height]);
-  console.log(fileUrl);
 
   const handlePrint = () => {
     window.open(fileUrl, "_blank");
@@ -109,6 +111,14 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
     } catch (error) {
       console.error("Download failed:", error);
     }
+  };
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
   };
   return (
     <div
@@ -153,6 +163,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
 
       {/* Canvas */}
       <canvas
+        onClick={handleOpenModal}
         ref={canvasRef}
         style={{
           borderRadius: 6,
@@ -277,6 +288,18 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
           <Icon icon="mdi:download" width={18} height={18} />
           ดาวน์โหลด
         </button>
+      </div>
+      <div className="absolute">
+        {" "}
+        {isModalOpen &&
+          ReactDOM.createPortal(
+            <PDFPrintModal
+              fileUrl={fileUrl}
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+            />,
+            document.body
+          )}
       </div>
     </div>
   );

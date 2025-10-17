@@ -23,7 +23,7 @@ const TaskDetailPage = () => {
   const [checkPrint, setCheckPrint] = useState<{ [key: string]: boolean }>({});
   const [successOpen, setSuccessOpen] = useState(false);
 
-  const canApprove = user?.role === "Sale Support 2" || "IT";
+  const canApprove = user?.role === "Sale Support 2" || user?.role === "IT";
   useEffect(() => {
     if (taskId) dispatch(fetchTaskById(taskId));
   }, [taskId, dispatch]);
@@ -184,10 +184,6 @@ const TaskDetailPage = () => {
         <div className="mt-4 text-gray-600 flex flex-wrap gap-4">
           {currentTask.tasks?.map((subtask, sIdx) =>
             subtask.attachments?.map((file, idx) => {
-              console.log(
-                `Rendering PdfThumbnail - Subtask ${sIdx}, Attachment ${idx}:`,
-                file
-              );
               return (
                 <div key={`${sIdx}-${idx}`} className="basis-1/6">
                   <PdfThumbnail

@@ -115,7 +115,6 @@ export default function DetailModal({
   }, [dispatch]);
 
   useEffect(() => {
-    console.log("taskDataToEdit", taskDataToEdit);
     if (taskDataToEdit) {
       setTitleName(taskDataToEdit.titleName || "");
       setCompanyName(taskDataToEdit.companyName || "");
@@ -273,7 +272,6 @@ export default function DetailModal({
         transition: Bounce,
       });
 
-      console.log([...formData]);
       onClose();
       return;
     } catch (err: any) {
