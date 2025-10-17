@@ -202,7 +202,7 @@ const StatusTrackingPage = () => {
                 <TableRow>
                   <TableCell>บริษัท</TableCell>
                   <TableCell>รหัสการผลิต</TableCell>
-                  <TableCell>วัตถุดิบ</TableCell>
+                  {/* <TableCell>วัตถุดิบ</TableCell> */}
                   <TableCell>กำหนดส่ง</TableCell>
                   <TableCell>ผู้ดูแล</TableCell>
                   <TableCell>สถานะ</TableCell>
@@ -216,11 +216,19 @@ const StatusTrackingPage = () => {
                     onClick={() => navigate(`/Task/${t._id}`)}
                   >
                     <TableCell>{t.titleName || "-"}</TableCell>
-                    <TableCell>{t.companyName || "-"}</TableCell>
                     <TableCell>
+                      {t.companyName === "J" ? (
+                        <p>JIG Gauge (J)</p>
+                      ) : t.companyName === "S" ? (
+                        <p>Single Gauge (S)</p>
+                      ) : (
+                        <p>ไม่ระบุ</p>
+                      )}
+                    </TableCell>
+                    {/* <TableCell>
                       {t.tasks?.map((sub: any) => sub.material).join(", ") ??
                         "ไม่มีวัตถุดิบ"}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell>
                       {t.dueDate ? formatThaiDate(t.dueDate) : "-"}
                     </TableCell>
@@ -275,7 +283,7 @@ const StatusTrackingPage = () => {
             <TableRow>
               <TableCell>บริษัท</TableCell>
               <TableCell>รหัสการผลิต</TableCell>
-              <TableCell>วัตถุดิบ</TableCell>
+              {/* <TableCell>วัตถุดิบ</TableCell> */}
               <TableCell>กำหนดส่ง</TableCell>
               <TableCell>วันที่อนุมัติ</TableCell>
               <TableCell>ผู้ดูแล</TableCell>
@@ -291,11 +299,19 @@ const StatusTrackingPage = () => {
                 onClick={() => navigate(`/Task/${t._id}`)}
               >
                 <TableCell>{t.titleName || "-"}</TableCell>
-                <TableCell>{t.companyName || "-"}</TableCell>
                 <TableCell>
+                  {t.companyName === "J" ? (
+                    <p>JIG Gauge (J)</p>
+                  ) : t.companyName === "S" ? (
+                    <p>Single Gauge (S)</p>
+                  ) : (
+                    <p>ไม่ระบุ</p>
+                  )}
+                </TableCell>
+                {/* <TableCell>
                   {t.tasks?.map((sub: any) => sub.material).join(", ") ??
                     "ไม่มีวัตถุดิบ"}
-                </TableCell>
+                </TableCell> */}
                 <TableCell>
                   {t.dueDate ? formatThaiDate(t.dueDate) : "-"}
                 </TableCell>
@@ -349,7 +365,7 @@ const StatusTrackingPage = () => {
       {!searchTerm.trim() ? (
         <div className="flex gap-4 overflow-hidden h-fit p-4">
           <DashboardCard
-            count={tasks.filter((t) => !t.isApprove).length}
+            count={tasks.filter((t: any) => !t.isApprove).length}
             type={"คำขอใหม่รออนุมัติ"}
           />
           <DashboardCard count={todayCount} type={"ขึ้นงานทั้งหมดวันนี้"} />

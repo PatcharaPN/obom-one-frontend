@@ -220,7 +220,15 @@ const HomePage = () => {
                         <p>{row.titleName}</p> {renderStatusBadge(row.taskType)}
                       </div>
                     </TableCell>
-                    <TableCell>{row.companyName}</TableCell>
+                    <TableCell>
+                      {row.companyName === "J" ? (
+                        <p>JIG Gauge (J)</p>
+                      ) : row.companyName === "S" ? (
+                        <p>Single Gauge (S)</p>
+                      ) : (
+                        <p>ไม่ระบุ</p>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {row.tasks.slice(0, 2).map((t, idx) => (
                         <p key={idx} className="inline-block mr-1">
@@ -337,9 +345,23 @@ const HomePage = () => {
                       <p>{row.titleName}</p> {renderStatusBadge(row.taskType)}
                     </div>
                   </TableCell>
-                  <TableCell>{row.companyName}</TableCell>
                   <TableCell>
-                    {row.tasks.map((t: any) => t.material).join(", ")}
+                    {row.companyName === "J" ? (
+                      <p>JIG Gauge (J)</p>
+                    ) : row.companyName === "S" ? (
+                      <p>Single Gauge (S)</p>
+                    ) : (
+                      <p>ไม่ระบุ</p>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {row.tasks.slice(0, 2).map((t: any, idx: any) => (
+                      <p key={idx} className="inline-block mr-1">
+                        {t.taskID}
+                        {idx < Math.min(row.tasks.length, 2) - 1 ? ", " : ""}
+                      </p>
+                    ))}
+                    {row.tasks.length > 2 && <span>...</span>}
                   </TableCell>
                   <TableCell>
                     {formatThaiDate(row.dueDate?.toLocaleString() || "")}
