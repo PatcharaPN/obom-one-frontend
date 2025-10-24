@@ -36,27 +36,38 @@ const TaskDetailPage = () => {
       toast.error("ไม่มีสิทธิ์ในการอนุมัติ", {
         position: "bottom-right",
         autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
         theme: "colored",
         transition: Bounce,
       });
       return;
     }
+
+    // ✅ เช็กว่าในทุก subtask ต้องมี attachments อย่างน้อย 1 ไฟล์
+    const hasMissingFiles =
+      currentTask?.tasks?.some(
+        (t) => !t.attachments || t.attachments.length === 0
+      ) ?? true;
+
+    if (hasMissingFiles) {
+      toast.error("ไม่สามารถอนุมัติได้: มีงานที่ยังไม่ได้แนบไฟล์", {
+        position: "bottom-right",
+        autoClose: 5000,
+        theme: "colored",
+        transition: Bounce,
+      });
+      return;
+    }
+
+    // ✅ ถ้าเช็กผ่าน ค่อยอนุมัติ
     try {
       const res = await axios.put(
         `${import.meta.env.VITE_BASE_URL}/api/task/${taskId}/approve`,
-        {
-          approveDate: approveDate,
-        }
+        { approveDate }
       );
 
       if (res.status !== 200) throw new Error("Approve failed");
-      setSuccessOpen(true);
 
+      setSuccessOpen(true);
       setTimeout(() => {
         setSuccessOpen(false);
         navigate(-1);
@@ -66,6 +77,7 @@ const TaskDetailPage = () => {
       alert("เกิดข้อผิดพลาดในการอนุมัติ");
     }
   };
+
   const handleFilePrinted = (filename: string) => {
     setCheckPrint((prev) => ({ ...prev, [filename]: true }));
   };
@@ -167,10 +179,12 @@ const TaskDetailPage = () => {
 
           <div className="w-full border border-black/10 rounded-xl p-4">
             <p>รายละเอียดเพิ่มเติม:</p>
-            <div className="text-left">
+            <div className="text-left py-2">
               {currentTask.description &&
               currentTask.description.trim() !== "" ? (
-                <span>{currentTask.description}</span>
+                <span className="text-4xl bg-blue-600/20 text-blue-600">
+                  {currentTask.description}
+                </span>
               ) : (
                 <span className="text-gray-500">ไม่มีรายละเอียดเพิ่มเติม</span>
               )}

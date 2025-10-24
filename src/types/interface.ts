@@ -27,3 +27,10 @@ export interface UserListProp {
   userName: string;
   userPic: string;
 }
+export type MenuItem = {
+  key: string;
+  label: string;
+  icon: string;
+  path?: string; // <-- ใส่ ? ให้เป็น optional
+  submenu?: MenuItem[];
+};

@@ -1,4 +1,4 @@
-export function formatThaiDate(dateString: string): string {
+export function formatThaiDate(dateString: any): string {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat("th-TH", {
     year: "numeric",

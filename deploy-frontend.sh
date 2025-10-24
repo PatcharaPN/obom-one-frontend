@@ -2,8 +2,9 @@
 set -e
 
 echo "Building frontend..."
-npm install
-npm run build
+# ใช้ pnpm แทน npm
+pnpm install
+pnpm run build
 
 echo "Deploying to server via SCP..."
 scp -r dist/* obomit@192.168.100.8:/var/www/html/

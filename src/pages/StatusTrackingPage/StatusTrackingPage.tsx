@@ -426,6 +426,7 @@ const StatusTrackingPage = () => {
       </div>
 
       <SummaryModal
+        onPending={tasks.filter((t: any) => !t.isApprove).length}
         open={isSummaryModalOpen}
         onClose={() => setSummaryModalOpen(false)}
         date={selectedDate}

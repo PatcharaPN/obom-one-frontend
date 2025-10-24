@@ -6,6 +6,8 @@ import TaskDetailPage from "../pages/TaskDetailPage/TaskDetailPage";
 import PDFPrintPage from "../pages/PDFPrintPage/PDFPrintPage";
 import LoginPage from "../pages/LoginPage/LoginPage";
 import PrivateRoute from "../layouts/PrivateRoute";
+import DashboardPage from "../pages/DashboardPage/DashboardPage";
+import TaskOverviewPage from "../pages/TaskOverviewPage/TaskOverviewPage";
 
 export const AppRoutes = () => {
   return (
@@ -26,6 +28,22 @@ export const AppRoutes = () => {
           element={
             <PrivateRoute>
               <HomePage />
+            </PrivateRoute>
+          }
+        />{" "}
+        <Route
+          path="/Dashboard"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />{" "}
+        <Route
+          path="/Overview"
+          element={
+            <PrivateRoute>
+              <TaskOverviewPage />
             </PrivateRoute>
           }
         />

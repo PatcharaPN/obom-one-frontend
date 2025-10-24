@@ -79,7 +79,13 @@ interface DetailModalProps {
   taskDataToEdit?: any;
   setTaskDataToEdit?: (data: any) => void; // เพิ่ม prop ฟังก์ชันนี้
 }
-
+type AttachmentFromDB = {
+  _id: string;
+  name: string;
+  path: string;
+  originalName?: string;
+  savedName?: string;
+};
 export default function DetailModal({
   open,
   onClose,
@@ -107,7 +113,7 @@ export default function DetailModal({
       taskID: string;
       material: string;
       quantity: number | "";
-      attachments: File[];
+      attachments: (File | AttachmentFromDB)[];
     }[]
   >([{ name: "", taskID: "", material: "", quantity: "", attachments: [] }]);
   useEffect(() => {
@@ -192,6 +198,42 @@ export default function DetailModal({
           theme: "colored",
         });
         return false;
+      }
+
+      const hasUploadedFiles =
+        task.attachments &&
+        task.attachments.some(
+          (file) => file && (file instanceof File || file._id)
+        );
+      if (!hasUploadedFiles) {
+        toast.warning(`กรุณาแนบไฟล์ในรายการที่ ${index + 1}`, {
+          position: "bottom-right",
+          theme: "colored",
+        });
+        return false;
+      }
+
+      for (const file of task.attachments) {
+        if (!(file instanceof File)) continue;
+
+        const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+        if (!allowedTypes.includes(file.type)) {
+          toast.warning(
+            `ไฟล์ ${file.name} ในรายการที่ ${
+              index + 1
+            } ไม่รองรับ (รองรับ PDF, JPG, PNG)`,
+            { position: "bottom-right", theme: "colored" }
+          );
+          return false;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          toast.warning(
+            `ไฟล์ ${file.name} ในรายการที่ ${index + 1} มีขนาดเกิน 5MB`,
+            { position: "bottom-right", theme: "colored" }
+          );
+          return false;
+        }
       }
     }
 
