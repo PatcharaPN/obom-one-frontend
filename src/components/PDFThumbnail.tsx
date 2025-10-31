@@ -294,6 +294,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
         {isModalOpen &&
           ReactDOM.createPortal(
             <PDFPrintModal
+              taskID={taskCode}
               fileUrl={fileUrl}
               isOpen={isModalOpen}
               onClose={handleCloseModal}

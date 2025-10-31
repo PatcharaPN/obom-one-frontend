@@ -14,6 +14,7 @@ const PDFPrintPageWrapper: React.FC = () => {
       onClose={function (): void {
         throw new Error("Function not implemented.");
       }}
+      taskID={taskId}
     />
   );
 };

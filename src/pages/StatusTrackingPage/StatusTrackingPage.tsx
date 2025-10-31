@@ -21,6 +21,9 @@ import { Icon } from "@iconify/react";
 import SummaryModal from "../../components/SummaryModal";
 import SearchBar from "../../components/Searchbar";
 import { useNavigate } from "react-router-dom";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs, { Dayjs } from "dayjs";
 
 const getLocalDayStr = (date: Date) => {
   return toZonedTime(date, "Asia/Bangkok").toLocaleDateString("en-CA");
@@ -39,7 +42,8 @@ const StatusTrackingPage = () => {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTask, setSelectedTask] = useState<any[]>([]);
   const [isSummaryModalOpen, setSummaryModalOpen] = useState<boolean>(false);
-
+  const [startDate, setStartDate] = useState<Dayjs | null>(null);
+  const [endDate, setEndDate] = useState<Dayjs | null>(null);
   const todayStr = getLocalDayStr(new Date());
 
   // กรอง tasks ตาม searchTerm
@@ -68,11 +72,22 @@ const StatusTrackingPage = () => {
       );
     });
   }, [searchTerm, tasks]);
+  const dateFilteredTasks = useMemo(() => {
+    if (!startDate && !endDate) return filteredTasks;
 
+    return filteredTasks.filter((t: any) => {
+      if (!t.approveDate) return false;
+      const d = dayjs(t.approveDate);
+
+      if (startDate && d.isBefore(startDate, "day")) return false;
+      if (endDate && d.isAfter(endDate, "day")) return false;
+      return true;
+    });
+  }, [filteredTasks, startDate, endDate]);
   // จัดกลุ่ม tasks ตามวัน (ใช้ filteredTasks แทน tasks)
   useEffect(() => {
     const grouped: { [date: string]: any[] } = {};
-    filteredTasks.forEach((t) => {
+    dateFilteredTasks.forEach((t) => {
       if (!t.approveDate) return;
       const dayStr = getLocalDayStr(new Date(t.approveDate));
       if (!grouped[dayStr]) grouped[dayStr] = [];
@@ -84,10 +99,10 @@ const StatusTrackingPage = () => {
     // initial collapse state
     const initialOpen: { [date: string]: boolean } = {};
     Object.keys(grouped).forEach((day) => {
-      initialOpen[day] = day === todayStr; // true เฉพาะวันนี้
+      initialOpen[day] = day === todayStr;
     });
     setOpenDays(initialOpen);
-  }, [filteredTasks]);
+  }, [dateFilteredTasks]);
 
   // Fetch tasks
   useEffect(() => {
@@ -146,7 +161,7 @@ const StatusTrackingPage = () => {
 
     if (day === todayStr) {
       todayTasksByDay[day] = approvedTasks;
-    } else if (diffDays <= 7 && diffDays >= 0) {
+    } else if (diffDays >= 0 && diffDays >= 0) {
       last7DaysTasksByDay[day] = approvedTasks;
     }
   });
@@ -404,7 +419,7 @@ const StatusTrackingPage = () => {
       {/* Tasks */}
       <div className="flex flex-col gap-4">
         {searchTerm.trim() ? (
-          renderFlatSearchTable(filteredTasks)
+          renderFlatSearchTable(dateFilteredTasks)
         ) : (
           <>
             {Object.entries(todayTasksByDay)
@@ -413,9 +428,26 @@ const StatusTrackingPage = () => {
               )
               .map(([day, dayTasks]) => renderTaskTable(day, dayTasks))}
 
-            <Typography className="text-xl font-semibold mt-4 p-2">
-              7 วันที่ผ่านมา
+            <Typography className="w-full flex justify-between text-xl font-semibold mt-4 p-2 items-center">
+              รายการขึ้นงานทั้งหมด
+              <div className="flex gap-2 items-center">
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="เริ่มต้น"
+                    value={startDate}
+                    onChange={(newValue) => setStartDate(newValue)}
+                    slotProps={{ textField: { size: "small" } }}
+                  />
+                  <DatePicker
+                    label="สิ้นสุด"
+                    value={endDate}
+                    onChange={(newValue) => setEndDate(newValue)}
+                    slotProps={{ textField: { size: "small" } }}
+                  />
+                </LocalizationProvider>
+              </div>
             </Typography>
+
             {Object.entries(last7DaysTasksByDay)
               .sort(
                 (a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime()
