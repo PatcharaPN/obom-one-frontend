@@ -4,6 +4,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import "pdfjs-dist/web/pdf_viewer.css";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import JsBarcode from "jsbarcode";
+
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
@@ -13,12 +14,14 @@ interface PDFPrintModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
 interface Stamp {
   text: string;
   fontSize: number;
   x: number;
   y: number;
 }
+
 const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
   fileUrl,
   isOpen,
@@ -38,13 +41,15 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
   const [startY, setStartY] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
-  const prefix = taskID ? `${taskID}` : "";
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-
+  const [material, setMaterial] = useState("");
   const [stampText, setStampText] = useState("");
   const [fontSize, setFontSize] = useState(15);
   const [posX, setPosX] = useState(50);
   const [posY, setPosY] = useState(50);
+  const [isMagnifying, setIsMagnifying] = useState(false);
+  const [materials, setMaterials] = useState<Record<number, string>>({});
+  const magnifierRef = useRef<HTMLCanvasElement>(null);
 
   // Load PDF
   useEffect(() => {
@@ -79,7 +84,7 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
     renderThumbnails();
   }, [pdfDoc]);
 
-  // Render PDF page + Stamp
+  // Render PDF Page
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current) return;
 
@@ -106,6 +111,7 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
       // Cancel previous render
       if (renderTaskRef.current) renderTaskRef.current.cancel();
       renderTaskRef.current = page.render({ canvasContext: ctx, viewport });
+
       try {
         await renderTaskRef.current.promise;
       } catch (err) {
@@ -113,50 +119,54 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
           console.error(err);
       }
 
-      // Add Stamp
+      // Add Stamps
       const pageStamps = stamps[pageNum] || [];
       pageStamps.forEach((stamp) => {
-        if (stamp?.text) {
-          // วาด Barcode
-          const barcodeCanvas = document.createElement("canvas");
-          JsBarcode(barcodeCanvas, stamp.text, {
-            format: "CODE128",
-            displayValue: false,
-            height: 35,
-            width: 0.6,
-            margin: 0,
-          });
+        if (!stamp.text) return;
 
-          // คำนวณกึ่งกลางข้อความ
-          ctx.font = `${stamp.fontSize}px Arial`;
-          const textWidth = ctx.measureText(stamp.text).width;
+        // สร้าง Barcode
+        const barcodeCanvas = document.createElement("canvas");
+        JsBarcode(barcodeCanvas, stamp.text, {
+          format: "CODE128",
+          displayValue: false,
+          height: 35,
+          width: 0.6,
+          margin: 0,
+        });
 
-          const centerX = stamp.x - textWidth / 2; // กึ่งกลาง
-          const barcodeX = centerX; // กึ่งกลางตรงกับข้อความ
-          const barcodeY = stamp.y - 50; // 20px เหนือข้อความ
+        ctx.textAlign = "center";
+        ctx.fillStyle = "black";
 
-          // วาด barcode
-          ctx.drawImage(
-            barcodeCanvas,
-            barcodeX,
-            barcodeY,
-            barcodeCanvas.width,
-            barcodeCanvas.height
-          );
+        const barcodeY = stamp.y - 50;
+        const textY = stamp.y;
+        const materialY = barcodeY - 10;
 
-          // วาดข้อความ
-          ctx.fillStyle = "black";
-          ctx.fillText(stamp.text, centerX, stamp.y);
-        }
+        // วาด material
+        ctx.font = `12px Arial`;
+        const pageMaterial = materials[pageNum] || "";
+        ctx.fillText(pageMaterial, stamp.x, materialY);
+
+        // วาด barcode
+        ctx.drawImage(
+          barcodeCanvas,
+          stamp.x - barcodeCanvas.width / 2,
+          barcodeY,
+          barcodeCanvas.width,
+          barcodeCanvas.height
+        );
+
+        // วาด TaskID
+        ctx.font = `${stamp.fontSize}px Arial`;
+        ctx.fillText(stamp.text, stamp.x, textY);
       });
 
       ctx.restore();
     };
 
     renderPage();
-  }, [pdfDoc, pageNum, scale, rotation, stampText, fontSize, posX, posY]);
+  }, [pdfDoc, pageNum, scale, rotation, material, stamps]);
 
-  // Drag handlers
+  // Drag
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!canvasContainerRef.current) return;
     setIsDragging(true);
@@ -176,7 +186,7 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
   const handleMouseUp = () => setIsDragging(false);
   const handleMouseLeave = () => setIsDragging(false);
 
-  if (!isOpen) return null;
+  // Stamp click
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
 
@@ -188,22 +198,35 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
     setPosY(y);
 
     setStamps((prev) => {
-      // ตรวจสอบว่ามี text นี้อยู่บนหน้าอื่นหรือไม่
-      const alreadyExists = Object.values(prev).some((pageStamps) =>
-        pageStamps.some((s) => s.text === stampText)
-      );
-
-      if (alreadyExists) {
-        alert(`รหัสการผลิต ${stampText} ถูกใช้ไปแล้วบนหน้าอื่น`);
-        return prev; // ไม่เพิ่มซ้ำ
-      }
-
-      // ถ้าไม่เคยใช้ เพิ่มใหม่บนหน้า current
       const pageStamps = prev[pageNum] || [];
-      const newPageStamps = [
-        ...pageStamps,
-        { text: stampText, fontSize, x, y },
-      ];
+
+      // ✅ ถ้ามี stamp ที่ text เดียวกันอยู่ในหน้านี้แล้ว → ย้ายตำแหน่งแทน
+      const existingIndex = pageStamps.findIndex((s) => s.text === stampText);
+
+      let newPageStamps;
+      if (existingIndex !== -1) {
+        // อัปเดตตำแหน่ง stamp เดิม
+        newPageStamps = [...pageStamps];
+        newPageStamps[existingIndex] = {
+          ...newPageStamps[existingIndex],
+          x,
+          y,
+        };
+      } else {
+        // ตรวจว่า stampText นี้เคยอยู่หน้าอื่นหรือยัง
+        const alreadyExists = Object.entries(prev).some(
+          ([page, stamps]) =>
+            Number(page) !== pageNum && stamps.some((s) => s.text === stampText)
+        );
+
+        if (alreadyExists) {
+          alert(`รหัสการผลิต ${stampText} ถูกใช้ไปแล้วบนหน้าอื่น`);
+          return prev;
+        }
+
+        // ถ้ายังไม่มี → เพิ่มใหม่
+        newPageStamps = [...pageStamps, { text: stampText, fontSize, x, y }];
+      }
 
       return {
         ...prev,
@@ -212,85 +235,70 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
     });
   };
 
-  // const handleDownloadPDF = async () => {
-  //   if (!pdfDoc) return;
+  // Magnifier
+  const handleMagnifierMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !magnifierRef.current || !isMagnifying) return;
 
-  //   const pdfBytes = await fetch(fileUrl).then((res) => res.arrayBuffer());
-  //   const pdf = await PDFDocument.load(pdfBytes);
+    const canvas = canvasRef.current;
+    const magnifier = magnifierRef.current;
+    const ctx = magnifier.getContext("2d");
+    if (!ctx) return;
 
-  //   for (let i = 1; i <= pdfDoc.numPages; i++) {
-  //     const page = pdf.getPage(i - 1); // pdf-lib ใช้ 0-index
-  //     const stamp = stamps[i];
-  //     if (!stamp?.text) continue;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-  //     const font = await pdf.embedFont(StandardFonts.Helvetica);
+    const zoom = 2;
+    const lensSize = magnifier.width / zoom;
+    ctx.clearRect(0, 0, magnifier.width, magnifier.height);
+    ctx.drawImage(
+      canvas,
+      x - lensSize / 2,
+      y - lensSize / 2,
+      lensSize,
+      lensSize,
+      0,
+      0,
+      magnifier.width,
+      magnifier.height
+    );
 
-  //     // วาดข้อความ
-  //     page.drawText(stamp.text, {
-  //       x: stamp.x,
-  //       y: page.getHeight() - stamp.y, // pdf-lib Y axis ต่างจาก canvas
-  //       size: stamp.fontSize,
-  //       font,
-  //       color: rgb(0, 0, 0),
-  //     });
+    ctx.beginPath();
+    ctx.arc(
+      magnifier.width / 2,
+      magnifier.height / 2,
+      magnifier.width / 2 - 1,
+      0,
+      2 * Math.PI
+    );
+    ctx.strokeStyle = "gray";
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-  //     // วาด Barcode (แปลงเป็น PNG)
-  //     const barcodeCanvas = document.createElement("canvas");
-  //     JsBarcode(barcodeCanvas, stamp.text, {
-  //       format: "CODE128",
-  //       displayValue: false,
-  //       height: 35,
-  //       width: 0.6,
-  //       margin: 0,
-  //     });
-  //     const barcodeDataUrl = barcodeCanvas.toDataURL("image/png");
-  //     const pngImageBytes = await fetch(barcodeDataUrl).then((res) =>
-  //       res.arrayBuffer()
-  //     );
-  //     const pngImage = await pdf.embedPng(pngImageBytes);
+    magnifier.style.display = "block";
+    magnifier.style.position = "fixed";
+    magnifier.style.left = `${e.clientX - magnifier.width / 2}px`;
+    magnifier.style.top = `${e.clientY - magnifier.height / 2}px`;
+  };
 
-  //     const pngDims = pngImage.scale(0.5); // เล็กลง
-  //     page.drawImage(pngImage, {
-  //       x: stamp.x,
-  //       y: page.getHeight() - stamp.y + 20, // เหนือข้อความ
-  //       width: pngDims.width,
-  //       height: pngDims.height,
-  //     });
-  //   }
-  //   const newPdfBytes = await pdf.save();
-  //   const blob = new Blob([Uint8Array.from(newPdfBytes)], {
-  //     type: "application/pdf",
-  //   });
-  //   const url = URL.createObjectURL(blob);
-  //   const a = document.createElement("a");
-  //   a.href = url;
-  //   a.download = "stamped.pdf";
-  //   a.click();
-  //   URL.revokeObjectURL(url);
-  // };
+  // PDF Download
   const handleDownloadAllStampedPages = async () => {
     if (!pdfDoc) return;
-
-    // โหลด PDF ต้นฉบับ
     const pdfBytes = await fetch(fileUrl).then((res) => res.arrayBuffer());
     const originalPdf = await PDFDocument.load(pdfBytes);
 
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       const pageStamps = stamps[i];
-      if (!pageStamps || pageStamps.length === 0) continue; // ข้ามหน้าที่ไม่มี stamp
+      if (!pageStamps || pageStamps.length === 0) continue;
 
       for (const stamp of pageStamps) {
-        if (!stamp.text) continue; // ข้าม stamp ที่ว่าง
-
-        // สร้าง PDF ใหม่ 1 หน้า
+        if (!stamp.text) continue;
         const newPdf = await PDFDocument.create();
         const [copiedPage] = await newPdf.copyPages(originalPdf, [i - 1]);
         newPdf.addPage(copiedPage);
         const page = newPdf.getPage(0);
 
         const font = await newPdf.embedFont(StandardFonts.Helvetica);
-
-        // วาดข้อความ
         page.drawText(stamp.text, {
           x: stamp.x,
           y: page.getHeight() - stamp.y,
@@ -299,12 +307,11 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
           color: rgb(0, 0, 0),
         });
 
-        // วาด Barcode
         const barcodeCanvas = document.createElement("canvas");
         JsBarcode(barcodeCanvas, stamp.text, {
           format: "CODE128",
           displayValue: false,
-          height: 35,
+          height: 40,
           width: 0.6,
           margin: 0,
         });
@@ -313,7 +320,7 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
           r.arrayBuffer()
         );
         const barcodeImg = await newPdf.embedPng(barcodeBytes);
-        const barcodeDims = barcodeImg.scale(0.5);
+        const barcodeDims = barcodeImg.scale(1);
         page.drawImage(barcodeImg, {
           x: stamp.x,
           y: page.getHeight() - stamp.y + 20,
@@ -321,7 +328,6 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
           height: barcodeDims.height,
         });
 
-        // สร้างไฟล์ PDF แยกสำหรับแต่ละ stamp
         const stampedBytes = await newPdf.save();
         const blob = new Blob([Uint8Array.from(stampedBytes)], {
           type: "application/pdf",
@@ -338,34 +344,21 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
     alert("✅ Exported all stamped pages successfully!");
   };
 
+  // Stamp Text Setup
   useEffect(() => {
-    if (isOpen && taskID) {
-      setStampText(`${taskID}`);
-    }
+    if (isOpen && taskID) setStampText(`${taskID}`);
   }, [isOpen, taskID]);
-  const handleStampTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleMaterialChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    if (!value.startsWith(prefix)) {
-      setStampText(prefix);
-      return;
-    }
-    setStampText(value);
+    setMaterials((prev) => ({
+      ...prev,
+      [pageNum]: value === "all" ? "" : value,
+    }));
   };
-  const handleStampTextKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const cursorPos = (e.target as HTMLInputElement).selectionStart ?? 0;
-    if (
-      (e.key === "Backspace" && cursorPos <= prefix.length) ||
-      (e.key === "Delete" && cursorPos < prefix.length)
-    ) {
-      e.preventDefault();
-    }
-  };
-  const handleStampTextSelect = (e: React.FocusEvent<HTMLInputElement>) => {
-    const input = e.target as HTMLInputElement;
-    if (input.selectionStart! < prefix.length) {
-      input.setSelectionRange(prefix.length, prefix.length);
-    }
-  };
+
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-lg w-[90%] h-[90%] flex overflow-hidden relative">
@@ -378,47 +371,47 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
         </button>
 
         {/* Sidebar */}
-        <div className="w-64 bg-gray-100 rounded p-4 flex flex-col gap-3 overflow-auto">
+        <div className="w-64 bg-gray-100 p-4 flex flex-col gap-3 overflow-auto">
           <h3 className="font-semibold text-lg mb-2">Stamp Info</h3>
           <label className="text-sm">Text:</label>
           <input
             type="text"
             className="w-full p-1 rounded border"
             value={stampText}
-            onChange={handleStampTextChange}
-            onKeyDown={handleStampTextKeyDown}
-            onFocus={handleStampTextSelect}
-          />
-          <label className="text-sm">Font Size:</label>
-          <input
-            type="number"
-            className="w-full p-1 rounded border"
-            value={fontSize}
-            onChange={(e) => setFontSize(Number(e.target.value))}
-          />
-          {/* 
-          <label className="text-sm">Position X:</label>
-          <input
-            type="number"
-            className="w-full p-1 rounded border"
-            value={posX}
-            onChange={(e) => setPosX(Number(e.target.value))}
+            onChange={(e) => setStampText(e.target.value)}
           />
 
-          <label className="text-sm">Position Y:</label>
-          <input
-            type="number"
-            className="w-full p-1 rounded border"
-            value={posY}
-            onChange={(e) => setPosY(Number(e.target.value))}
-          />
-
-          <button
-            className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-            onClick={() => setStampText(stampText)}
+          <label className="text-sm">Material</label>
+          <select
+            className="border p-1 rounded-sm"
+            onChange={handleMaterialChange}
           >
-            Add Stamp
-          </button> */}{" "}
+            <option value="all">กรุณาเลือก Material</option>
+            <option value="SKS3">SKS3</option>
+            <option value="SKD11">SKD11</option>
+            <option value="SGT">SGT</option>
+            <option value="SLD">SLD</option>
+            <option value="S45C">S45C</option>
+            <option value="S50C">S50C</option>
+            <option value="AL">AL</option>
+            <option value="MC-NYLON">MC-NYLON</option>
+          </select>
+
+          <div className="flex justify-between mt-2">
+            <button
+              className="bg-gray-300 px-2 py-1 rounded hover:bg-gray-400"
+              onClick={() => setScale((s) => Math.min(s + 0.2, 3))}
+            >
+              Zoom In
+            </button>
+            <button
+              className="bg-gray-300 px-2 py-1 rounded hover:bg-gray-400"
+              onClick={() => setScale((s) => Math.max(s - 0.2, 0.4))}
+            >
+              Zoom Out
+            </button>
+          </div>
+
           <button
             className="mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
             onClick={handleDownloadAllStampedPages}
@@ -428,11 +421,11 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
         </div>
 
         {/* Thumbnails */}
-        <div className="w-48 bg-white rounded gap-5 p-2 h-full overflow-auto flex flex-col">
+        <div className="w-48 bg-white p-2 h-full overflow-auto flex flex-col gap-2">
           {thumbnails.map((src, i) => (
             <div
               key={i}
-              className={`cursor-pointer rounded p-1 text-center flex flex-col items-center ${
+              className={`cursor-pointer rounded p-1 flex flex-col items-center ${
                 pageNum === i + 1 ? "bg-blue-100" : ""
               }`}
               onClick={() => setPageNum(i + 1)}
@@ -440,24 +433,37 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
               <img
                 src={src}
                 alt={`Page ${i + 1}`}
-                className="w-full h-20 mb-1"
+                className="w-full h-20 mb-1 object-contain"
               />
               <span className="text-xs">Page {i + 1}</span>
             </div>
           ))}
         </div>
 
-        {/* Canvas */}
+        {/* Main Canvas */}
         <div
           ref={canvasContainerRef}
-          className="flex-1 flex items-center justify-center bg-white rounded overflow-auto p-4 cursor-grab"
+          className="flex-1 flex items-center justify-center bg-white rounded overflow-auto p-4 cursor-grab relative"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
           style={{ cursor: isDragging ? "grabbing" : "grab" }}
         >
-          <canvas ref={canvasRef} onClick={handleCanvasClick} />
+          <canvas
+            ref={canvasRef}
+            onClick={handleCanvasClick}
+            onMouseMove={handleMagnifierMove}
+            onMouseEnter={() => setIsMagnifying(true)}
+            onMouseLeave={() => setIsMagnifying(false)}
+          />
+
+          <canvas
+            ref={magnifierRef}
+            width={150}
+            height={150}
+            className="absolute border border-gray-400 rounded-full pointer-events-none bg-white/80 hidden"
+          />
         </div>
       </div>
     </div>
