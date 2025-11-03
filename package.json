@@ -31,6 +31,7 @@
     "lucide-react": "^0.544.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^2.16.105",
+    "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",

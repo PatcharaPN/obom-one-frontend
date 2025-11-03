@@ -20,7 +20,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      toast.error("🔒 Session หมดอายุ กรุณาเข้าสู่ระบบใหม่", {
+      toast.error("Session หมดอายุ กรุณาเข้าสู่ระบบใหม่", {
         position: "bottom-right",
         autoClose: 3000,
         theme: "light",
