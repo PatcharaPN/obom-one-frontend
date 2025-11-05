@@ -340,6 +340,7 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
       for (const stamp of pageStamps) {
         const font = await newPdf.embedFont(StandardFonts.Helvetica);
         const pageHeight = page.getHeight();
+        const fixedY = pageHeight - stamp.y;
 
         const qrDataUrl = await QRCode.toDataURL(stamp.text, {
           width: 256,
@@ -353,7 +354,7 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
         const qrSize = 50;
         page.drawText(materials[i] || "", {
           x: stamp.x,
-          y: pageHeight - stamp.y + qrSize + 25,
+          y: fixedY + qrSize + 25,
           size: 10,
           font,
           color: rgb(0, 0, 0),
@@ -361,14 +362,14 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
 
         page.drawImage(qrImage, {
           x: stamp.x - 14.8,
-          y: pageHeight - stamp.y + 10,
+          y: fixedY + 10,
           width: qrSize,
           height: qrSize,
         });
 
         page.drawText(stamp.text, {
           x: stamp.x - 15,
-          y: pageHeight - stamp.y - 5,
+          y: fixedY - 5,
           size: 9,
           font,
           color: rgb(0, 0, 0),
