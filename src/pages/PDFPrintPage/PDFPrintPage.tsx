@@ -1,59 +1,40 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import * as pdfjsLib from "pdfjs-dist";
-import * as QRCode from "qrcode";
 import "pdfjs-dist/web/pdf_viewer.css";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import JsBarcode from "jsbarcode";
 import axiosInstance from "../../contexts/axiosInstance";
+import { PDFDocument, rgb } from "pdf-lib";
+import * as QRCode from "qrcode";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
 interface PDFPrintModalProps {
   drawingInfo: { customer?: string; poNumber?: string; qtNumber?: string };
-  taskID?: string | undefined;
+  taskID?: string;
   fileUrl: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface Stamp {
-  text: string;
-  fontSize: number;
-  x: number;
-  y: number;
-}
-
-const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
+const PDFInfoModal: React.FC<PDFPrintModalProps> = ({
   fileUrl,
   isOpen,
   taskID,
   onClose,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [pageNum, setPageNum] = useState(1);
-  const [scale, setScale] = useState(1);
-  const [rotation, setRotation] = useState(0);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [stamps, setStamps] = useState<Record<number, Stamp[]>>({});
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [startY, setStartY] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [scrollTop, setScrollTop] = useState(0);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const [material, setMaterial] = useState("");
-  const [stampText, setStampText] = useState("");
-  const [fontSize, setFontSize] = useState(11);
-  const [posX, setPosX] = useState(50);
-  const [posY, setPosY] = useState(50);
-  const [isMagnifying, setIsMagnifying] = useState(false);
-  const [materials, setMaterials] = useState<Record<number, string>>({});
-  const magnifierRef = useRef<HTMLCanvasElement>(null);
+  const [headTaskId, setHeadTaskId] = useState(taskID || "");
+  const [pageData, setPageData] = useState<
+    Record<number, { taskId: string; material: string }>
+  >({});
 
+  const currentPageData = pageData[pageNum] || { taskId: "", material: "" };
+
+  // โหลด PDF
   useEffect(() => {
     if (!isOpen) return;
     const loadPdf = async () => {
@@ -65,13 +46,36 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
     loadPdf();
   }, [fileUrl, isOpen]);
 
+  // เปลี่ยนค่า task id ต่อหน้า
+  const handleTaskIdChange = (value: string) => {
+    setPageData((prev) => ({
+      ...prev,
+      [pageNum]: {
+        taskId: value,
+        material: prev[pageNum]?.material || "",
+      },
+    }));
+  };
+
+  // เปลี่ยนค่า material ต่อหน้า
+  const handleMaterialChange = (value: string) => {
+    setPageData((prev) => ({
+      ...prev,
+      [pageNum]: {
+        material: value,
+        taskId: prev[pageNum]?.taskId || "",
+      },
+    }));
+  };
+
+  // สร้าง thumbnail ทุกหน้า
   useEffect(() => {
     if (!pdfDoc) return;
     const renderThumbnails = async () => {
       const thumbs: string[] = [];
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         const page = await pdfDoc.getPage(i);
-        const viewport = page.getViewport({ scale: 0.2 });
+        const viewport = page.getViewport({ scale: 0.3 });
         const canvas = document.createElement("canvas");
         canvas.width = viewport.width;
         canvas.height = viewport.height;
@@ -85,328 +89,144 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
     renderThumbnails();
   }, [pdfDoc]);
 
+  // แสดงหน้าปัจจุบัน
   useEffect(() => {
     if (!pdfDoc || !canvasRef.current) return;
-
     const renderPage = async () => {
       const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1 });
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    };
+    renderPage();
+  }, [pdfDoc, pageNum]);
 
-      let viewport = page.getViewport({ scale });
-      let width = viewport.width;
-      let height = viewport.height;
-      if (rotation === 90 || rotation === 270)
-        [width, height] = [height, width];
+  const handleSubmit = async () => {
+    try {
+      if (!pdfDoc) return;
 
-      canvas.width = width;
-      canvas.height = height;
-
-      ctx.save();
-      ctx.translate(width / 2, height / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-      ctx.translate(-viewport.width / 2, -viewport.height / 2);
-
-      if (renderTaskRef.current) renderTaskRef.current.cancel();
-      renderTaskRef.current = page.render({ canvasContext: ctx, viewport });
-
-      try {
-        await renderTaskRef.current.promise;
-      } catch (err) {
-        if ((err as any).name !== "RenderingCancelledException")
-          console.error(err);
-      }
-
-      const pageStamps = stamps[pageNum] || [];
-      pageStamps.forEach(async (stamp) => {
-        if (!stamp.text) return;
-
-        const qrCanvas = document.createElement("canvas");
-        await QRCode.toCanvas(qrCanvas, stamp.text, { width: 50, margin: 1 });
-
-        ctx.font = `10px Arial`;
-        ctx.fillStyle = "black";
-        const pageMaterial = materials[pageNum] || "";
-        ctx.fillText(pageMaterial, stamp.x, stamp.y - 10);
-
-        ctx.drawImage(qrCanvas, stamp.x - 25, stamp.y, 50, 50);
-
-        ctx.font = `${stamp.fontSize}px Arial`;
-        ctx.fillText(stamp.text, stamp.x - 30, stamp.y + 65);
+      const totalPages = pdfDoc.numPages;
+      const result = Array.from({ length: totalPages }, (_, i) => {
+        const page = i + 1;
+        const data = pageData[page] || { taskId: "", material: "" };
+        const fullTaskId = headTaskId
+          ? `${headTaskId}${data.taskId ? "-" + data.taskId : ""}`
+          : data.taskId;
+        return { page, fullTaskId, material: data.material };
       });
 
-      ctx.restore();
-    };
-
-    renderPage();
-  }, [pdfDoc, pageNum, scale, rotation, material, stamps]);
-
-  // Drag
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!canvasContainerRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - canvasContainerRef.current.offsetLeft);
-    setStartY(e.pageY - canvasContainerRef.current.offsetTop);
-    setScrollLeft(canvasContainerRef.current.scrollLeft);
-    setScrollTop(canvasContainerRef.current.scrollTop);
-  };
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !canvasContainerRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - canvasContainerRef.current.offsetLeft;
-    const y = e.pageY - canvasContainerRef.current.offsetTop;
-    canvasContainerRef.current.scrollLeft = scrollLeft - (x - startX);
-    canvasContainerRef.current.scrollTop = scrollTop - (y - startY);
-  };
-  const handleMouseUp = () => setIsDragging(false);
-  const handleMouseLeave = () => setIsDragging(false);
-
-  // Stamp click
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    setPosX(x);
-    setPosY(y);
-
-    setStamps((prev) => {
-      const pageStamps = prev[pageNum] || [];
-
-      // ✅ ถ้ามี stamp ที่ text เดียวกันอยู่ในหน้านี้แล้ว → ย้ายตำแหน่งแทน
-      const existingIndex = pageStamps.findIndex((s) => s.text === stampText);
-
-      let newPageStamps;
-      if (existingIndex !== -1) {
-        // อัปเดตตำแหน่ง stamp เดิม
-        newPageStamps = [...pageStamps];
-        newPageStamps[existingIndex] = {
-          ...newPageStamps[existingIndex],
-          x,
-          y,
-        };
-      } else {
-        // ตรวจว่า stampText นี้เคยอยู่หน้าอื่นหรือยัง
-        const alreadyExists = Object.entries(prev).some(
-          ([page, stamps]) =>
-            Number(page) !== pageNum && stamps.some((s) => s.text === stampText)
-        );
-
-        if (alreadyExists) {
-          alert(`รหัสการผลิต ${stampText} ถูกใช้ไปแล้วบนหน้าอื่น`);
-          return prev;
-        }
-
-        // ถ้ายังไม่มี → เพิ่มใหม่
-        newPageStamps = [...pageStamps, { text: stampText, fontSize, x, y }];
+      // ✅ ตรวจซ้ำ
+      const usedIds = new Set<string>();
+      const duplicates: string[] = [];
+      result.forEach((r) => {
+        if (!r.fullTaskId) return;
+        if (usedIds.has(r.fullTaskId)) duplicates.push(r.fullTaskId);
+        else usedIds.add(r.fullTaskId);
+      });
+      if (duplicates.length > 0) {
+        alert(`❌ พบ Task ID ซ้ำ: ${duplicates.join(", ")}`);
+        return;
       }
 
-      return {
-        ...prev,
-        [pageNum]: newPageStamps,
-      };
-    });
-  };
+      // ✅ โหลด PDF ต้นฉบับครั้งเดียว
+      const response = await fetch(fileUrl);
+      const existingPdfBytes = await response.arrayBuffer();
+      const basePdf = await PDFDocument.load(existingPdfBytes);
 
-  // Magnifier
-  const handleMagnifierMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current || !magnifierRef.current || !isMagnifying) return;
+      const formData = new FormData();
+      formData.append("poNumber", "PO-1234");
+      formData.append("qtNumber", "QT-5678");
+      formData.append("customer", "Honda");
 
-    const canvas = canvasRef.current;
-    const magnifier = magnifierRef.current;
-    const ctx = magnifier.getContext("2d");
-    if (!ctx) return;
+      // ✅ วนหน้าแล้วสร้าง PDF แยก
+      for (const r of result) {
+        if (!r.fullTaskId) continue;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+        const singlePdf = await PDFDocument.create();
+        const [copiedPage] = await singlePdf.copyPages(basePdf, [r.page - 1]);
+        singlePdf.addPage(copiedPage);
 
-    const zoom = 2;
-    const lensSize = magnifier.width / zoom;
-    ctx.clearRect(0, 0, magnifier.width, magnifier.height);
-    ctx.drawImage(
-      canvas,
-      x - lensSize / 2,
-      y - lensSize / 2,
-      lensSize,
-      lensSize,
-      0,
-      0,
-      magnifier.width,
-      magnifier.height
-    );
+        // วาง QR ซ้ายบน
+        const qrDataUrl = await QRCode.toDataURL(r.fullTaskId, { width: 100 });
+        const qrImage = await singlePdf.embedPng(qrDataUrl);
+        const page = singlePdf.getPage(0);
+        const { height } = page.getSize();
 
-    ctx.beginPath();
-    ctx.arc(
-      magnifier.width / 2,
-      magnifier.height / 2,
-      magnifier.width / 2 - 1,
-      0,
-      2 * Math.PI
-    );
-    ctx.strokeStyle = "gray";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+        // กล่องพื้นหลังของ QR
+        page.drawRectangle({
+          x: 15,
+          y: height - 130,
+          width: 75,
+          height: 75,
+          color: rgb(1, 1, 1),
+        });
 
-    magnifier.style.display = "block";
-    magnifier.style.position = "fixed";
-    magnifier.style.left = `${e.clientX - magnifier.width / 2}px`;
-    magnifier.style.top = `${e.clientY - magnifier.height / 2}px`;
-  };
+        // วาง QR
+        page.drawImage(qrImage, {
+          x: 20,
+          y: height - 120,
+          width: 70,
+          height: 70,
+        });
 
-  // PDF Download
-  const handleDownloadAllStampedPages = async () => {
-    if (!pdfDoc) return;
-    const pdfBytes = await fetch(fileUrl).then((res) => res.arrayBuffer());
-    const originalPdf = await PDFDocument.load(pdfBytes);
+        // 🟩 เพิ่มพื้นหลังให้ข้อความ Task ID และ Material
+        const textBgWidth = 90;
+        const textBgHeight = 15;
+        const textBgX = 15;
+        const textBgY = height - 165; // ใต้กล่อง QR
 
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-      const pageStamps = stamps[i];
-      if (!pageStamps || pageStamps.length === 0) continue;
+        page.drawRectangle({
+          x: textBgX,
+          y: textBgY,
+          width: textBgWidth,
+          height: textBgHeight,
+          color: rgb(1, 1, 1), // สีพื้นหลังข้อความ (ขาว)
+          opacity: 1,
+        });
 
-      for (const stamp of pageStamps) {
-        if (!stamp.text) continue;
-        const newPdf = await PDFDocument.create();
-        const [copiedPage] = await newPdf.copyPages(originalPdf, [i - 1]);
-        newPdf.addPage(copiedPage);
-        const page = newPdf.getPage(0);
-
-        const font = await newPdf.embedFont(StandardFonts.Helvetica);
-        page.drawText(stamp.text, {
-          x: stamp.x,
-          y: page.getHeight() - stamp.y,
-          size: stamp.fontSize,
-          font,
+        // 🟨 เพิ่มข้อความ Task ID และ Material ใต้ QR
+        page.drawText(`${r.fullTaskId}`, {
+          x: 20,
+          y: height - 165 + 15,
+          size: 10,
           color: rgb(0, 0, 0),
         });
 
-        const barcodeCanvas = document.createElement("canvas");
-        JsBarcode(barcodeCanvas, stamp.text, {
-          format: "CODE128",
-          displayValue: false,
-          height: 40,
-          width: 0.6,
-          margin: 0,
-        });
-        const barcodeDataUrl = barcodeCanvas.toDataURL("image/png");
-        const barcodeBytes = await fetch(barcodeDataUrl).then((r) =>
-          r.arrayBuffer()
-        );
-        const barcodeImg = await newPdf.embedPng(barcodeBytes);
-        const barcodeDims = barcodeImg.scale(1);
-        page.drawImage(barcodeImg, {
-          x: stamp.x,
-          y: page.getHeight() - stamp.y + 20,
-          width: barcodeDims.width,
-          height: barcodeDims.height,
-        });
-
-        const stampedBytes = await newPdf.save();
-        const blob = new Blob([Uint8Array.from(stampedBytes)], {
+        if (r.material) {
+          page.drawText(`Material: ${r.material}`, {
+            x: 20,
+            y: height - 165 + 5,
+            size: 10,
+            color: rgb(0, 0, 0),
+          });
+        }
+        const singlePdfBytes = await singlePdf.save();
+        const blob = new Blob([singlePdfBytes as unknown as BlobPart], {
           type: "application/pdf",
         });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${stamp.text}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    }
 
-    alert("✅ Exported all stamped pages successfully!");
-  };
-  const handleUploadStampedPages = async () => {
-    if (!pdfDoc) return;
-
-    const pdfBytes = await fetch(fileUrl).then((res) => res.arrayBuffer());
-    const originalPdf = await PDFDocument.load(pdfBytes);
-    const formData = new FormData();
-
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-      const pageStamps = stamps[i];
-      if (!pageStamps || pageStamps.length === 0) continue;
-
-      const newPdf = await PDFDocument.create();
-      const [copiedPage] = await newPdf.copyPages(originalPdf, [i - 1]);
-      newPdf.addPage(copiedPage);
-      const page = newPdf.getPage(0);
-
-      const names: string[] = [];
-
-      for (const stamp of pageStamps) {
-        const font = await newPdf.embedFont(StandardFonts.Helvetica);
-        const pageHeight = page.getHeight();
-        const fixedY = pageHeight - stamp.y;
-
-        const qrDataUrl = await QRCode.toDataURL(stamp.text, {
-          width: 256,
-          margin: 1,
-          color: { dark: "#000000", light: "#ffffff" },
-        });
-
-        const qrBytes = await fetch(qrDataUrl).then((r) => r.arrayBuffer());
-        const qrImage = await newPdf.embedPng(qrBytes);
-
-        const qrSize = 50;
-        page.drawText(materials[i] || "", {
-          x: stamp.x,
-          y: fixedY + qrSize + 25,
-          size: 10,
-          font,
-          color: rgb(0, 0, 0),
-        });
-
-        page.drawImage(qrImage, {
-          x: stamp.x - 14.8,
-          y: fixedY + 10,
-          width: qrSize,
-          height: qrSize,
-        });
-
-        page.drawText(stamp.text, {
-          x: stamp.x - 15,
-          y: fixedY - 5,
-          size: 9,
-          font,
-          color: rgb(0, 0, 0),
-        });
-
-        names.push(stamp.text);
+        formData.append("files", blob, `${r.fullTaskId}.pdf`);
+        formData.append(
+          "meta[]",
+          JSON.stringify({ taskID: r.fullTaskId, material: r.material })
+        );
       }
 
-      const stampedBytes = await newPdf.save();
-      const blob = new Blob([Uint8Array.from(stampedBytes)], {
-        type: "application/pdf",
+      // ✅ ส่งทั้งหมดขึ้น API
+      const res = await axiosInstance.post("/api/drawing", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      formData.append("files", blob, `${names[0] || `page-${i}`}.pdf`);
-      formData.append("names", JSON.stringify(names));
-      formData.append(
-        "materials",
-        JSON.stringify({
-          page: i,
-          material: materials[i] || "",
-        })
-      );
+
+      alert("✅ Upload success (split per page)!");
+      console.log("📄 Response:", res.data);
+    } catch (err: any) {
+      console.error("❌ Upload Error:", err);
+      alert(`❌ Upload failed: ${err.message}`);
     }
-
-    await axiosInstance.post("/api/drawing", formData);
-    alert("✅ Uploaded all stamped pages with QR Codes!");
-  };
-
-  useEffect(() => {
-    if (isOpen && taskID) setStampText(`${taskID}`);
-  }, [isOpen, taskID]);
-
-  const handleMaterialChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    setMaterials((prev) => ({
-      ...prev,
-      [pageNum]: value === "all" ? "" : value,
-    }));
   };
 
   if (!isOpen) return null;
@@ -414,7 +234,7 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-lg w-[90%] h-[90%] flex overflow-hidden relative">
-        {/* Close Button */}
+        {/* ปุ่มปิด */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 bg-gray-200 p-2 rounded-full hover:bg-gray-300 z-50"
@@ -424,20 +244,44 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
 
         {/* Sidebar */}
         <div className="w-64 bg-gray-100 p-4 flex flex-col gap-3 overflow-auto">
-          <h3 className="font-semibold text-lg mb-2">Stamp Info</h3>
-          <label className="text-sm">รหัสการผลิต:</label>
+          <h3 className="font-semibold text-lg mb-2">ข้อมูล Drawing</h3>
+
+          <label className="text-sm font-medium">รหัสหลัก (Head Task ID)</label>
           <input
             type="text"
             className="w-full p-1 rounded border"
-            value={stampText}
-            onChange={(e) => setStampText(e.target.value)}
+            value={headTaskId}
+            onChange={(e) => setHeadTaskId(e.target.value)}
+            readOnly
           />
-          <label className="text-sm">Material</label>
+
+          <label className="text-sm font-medium mt-2">
+            รหัสการผลิตหน้านี้ (Task ID)
+          </label>
+          <div className="flex gap-1">
+            <input
+              type="text"
+              className="w-24 p-1 rounded border bg-gray-100"
+              value={headTaskId}
+              readOnly
+            />
+            <span className="self-center">-</span>
+            <input
+              type="text"
+              className="flex-1 p-1 rounded border w-15"
+              value={currentPageData.taskId}
+              onChange={(e) => handleTaskIdChange(e.target.value)}
+              placeholder="เช่น 1, 2"
+            />
+          </div>
+
+          <label className="text-sm mt-2">Material</label>
           <select
             className="border p-1 rounded-sm"
-            onChange={handleMaterialChange}
+            value={currentPageData.material}
+            onChange={(e) => handleMaterialChange(e.target.value)}
           >
-            <option value="all">กรุณาเลือก Material</option>
+            <option value="">เลือก Material</option>
             <option value="SKS3">SKS3</option>
             <option value="SKD11">SKD11</option>
             <option value="SGT">SGT</option>
@@ -447,31 +291,12 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
             <option value="AL">AL</option>
             <option value="MC-NYLON">MC-NYLON</option>
           </select>
-          <div className="flex justify-between mt-2">
-            <button
-              className="bg-gray-300 px-2 py-1 rounded hover:bg-gray-400"
-              onClick={() => setScale((s) => Math.min(s + 0.2, 3))}
-            >
-              Zoom In
-            </button>
-            <button
-              className="bg-gray-300 px-2 py-1 rounded hover:bg-gray-400"
-              onClick={() => setScale((s) => Math.max(s - 0.2, 0.4))}
-            >
-              Zoom Out
-            </button>
-          </div>
+
           <button
-            className="mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-            onClick={handleDownloadAllStampedPages}
+            onClick={handleSubmit}
+            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-1.5 rounded"
           >
-            Download PDF
-          </button>{" "}
-          <button
-            className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-            onClick={handleUploadStampedPages}
-          >
-            Upload PDF Stamped Pages
+            บันทึกข้อมูล
           </button>
         </div>
 
@@ -496,33 +321,12 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
         </div>
 
         {/* Main Canvas */}
-        <div
-          ref={canvasContainerRef}
-          className="flex-1 flex items-center justify-center bg-white rounded overflow-auto p-4 cursor-grab relative"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-          style={{ cursor: isDragging ? "grabbing" : "grab" }}
-        >
-          <canvas
-            ref={canvasRef}
-            onClick={handleCanvasClick}
-            onMouseMove={handleMagnifierMove}
-            onMouseEnter={() => setIsMagnifying(true)}
-            onMouseLeave={() => setIsMagnifying(false)}
-          />
-
-          <canvas
-            ref={magnifierRef}
-            width={150}
-            height={150}
-            className="absolute border border-gray-400 rounded-full pointer-events-none bg-white/80 hidden"
-          />
+        <div className="flex-1 flex items-center justify-center bg-white rounded overflow-auto p-4">
+          <canvas ref={canvasRef} />
         </div>
       </div>
     </div>
   );
 };
 
-export default PDFPrintModal;
+export default PDFInfoModal;
