@@ -28,11 +28,21 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
   const [startY, setStartY] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
+  const isImage = /\.(jpg|jpeg|png|webp)$/i.test(fileUrl);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   // โหลด PDF
   useEffect(() => {
     if (!isOpen) return;
+
+    if (isImage) {
+      setPdfDoc(null);
+      setPageNum(1);
+      setRotation(0);
+      setThumbnails([fileUrl]);
+      return;
+    }
+
     const loadPdf = async () => {
       const loadingTask = pdfjsLib.getDocument(fileUrl);
       const pdf = await loadingTask.promise;
@@ -41,7 +51,36 @@ const PDFPrintModal: React.FC<PDFPrintModalProps> = ({
     };
     loadPdf();
   }, [fileUrl, isOpen]);
+  useEffect(() => {
+    if (!isImage || !canvasRef.current) return;
 
+    const img = new Image();
+    img.src = fileUrl;
+    img.onload = () => {
+      const canvas = canvasRef.current!;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      // Adjust canvas size to image
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Translate and rotate if needed
+      context.save();
+      context.translate(canvas.width / 2, canvas.height / 2);
+      context.rotate((rotation * Math.PI) / 180);
+      context.drawImage(
+        img,
+        (-img.width * scale) / 2,
+        (-img.height * scale) / 2,
+        img.width * scale,
+        img.height * scale
+      );
+      context.restore();
+    };
+  }, [fileUrl, isOpen, scale, rotation, isImage]);
   // Render thumbnails
   useEffect(() => {
     if (!pdfDoc) return;
