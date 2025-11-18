@@ -227,7 +227,7 @@ export default function DetailModal({
           return false;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > 50 * 1024 * 1024) {
           toast.warning(
             `ไฟล์ ${file.name} ในรายการที่ ${index + 1} มีขนาดเกิน 5MB`,
             { position: "bottom-right", theme: "colored" }
@@ -285,7 +285,7 @@ export default function DetailModal({
             return;
           }
 
-          if (file.size > 5 * 1024 * 1024) {
+          if (file.size > 10 * 1024 * 1024) {
             toast.warning(
               `ไฟล์ ${file.name} ในรายการที่ ${idx + 1} มีขนาดเกิน 5MB`,
               {
@@ -411,9 +411,9 @@ export default function DetailModal({
             return;
           }
 
-          if (file.size > 5 * 1024 * 1024) {
+          if (file.size > 10 * 1024 * 1024) {
             toast.warning(
-              `ไฟล์ ${file.name} ในรายการที่ ${idx + 1} มีขนาดเกิน 5MB`,
+              `ไฟล์ ${file.name} ในรายการที่ ${idx + 1} มีขนาดเกิน 10MB`,
               {
                 position: "bottom-right",
                 theme: "colored",

@@ -18,6 +18,12 @@ export const menuItems: MenuItem[] = [
         icon: "mdi:list-status",
         path: "/status-tracking",
       },
+      {
+        key: "drawing-view",
+        label: "รายการแบบ",
+        icon: "mdi:list-status",
+        path: "/drawing",
+      },
     ],
   },
   {

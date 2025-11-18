@@ -8,6 +8,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
 interface PdfThumbnailProps {
+  drawingInfo: { customer?: string; poNumber?: string; qtNumber?: string };
   fileUrl: string;
   width?: number;
   taskCode?: string;
@@ -21,6 +22,7 @@ interface PdfThumbnailProps {
 
 const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   fileUrl,
+  drawingInfo: { customer, poNumber, qtNumber },
   width = 200,
   height = 220,
   filename,
@@ -33,17 +35,60 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   const [loading, setLoading] = useState(true);
   const [isPrinted, setPrinted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const isImage = /\.(jpg|jpeg|png|webp)$/i.test(fileUrl);
+
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    // case 1: Rendering Image file
+    if (isImage) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = fileUrl;
+
+      img.onload = () => {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Fit image into thumbnail area
+        const scale = Math.min(
+          canvas.width / img.width,
+          canvas.height / img.height
+        );
+        const drawWidth = img.width * scale;
+        const drawHeight = img.height * scale;
+
+        const offsetX = (canvas.width - drawWidth) / 2;
+        const offsetY = (canvas.height - drawHeight) / 2;
+
+        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+        setLoading(false);
+      };
+
+      img.onerror = (err) => {
+        console.error("Error loading image:", err);
+      };
+
+      return;
+    }
+
+    // case 2: Rendering PDF file
     const renderPdf = async () => {
       try {
         const pdf = await pdfjsLib.getDocument(fileUrl).promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1 });
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d")!;
-        const dpr = window.devicePixelRatio || 1;
 
         canvas.width = width * dpr;
         canvas.height = height * dpr;
@@ -57,6 +102,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
           canvas.width / viewport.width,
           canvas.height / viewport.height
         );
+
         const scaledViewport = page.getViewport({ scale });
         const offsetX = (canvas.width - scaledViewport.width) / 2;
         const offsetY = (canvas.height - scaledViewport.height) / 2;
@@ -77,7 +123,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
     };
 
     renderPdf();
-  }, [fileUrl, width, height]);
+  }, [fileUrl, width, height, isImage]);
 
   const handlePrint = () => {
     window.open(fileUrl, "_blank");
@@ -187,7 +233,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            textAlign: "left", // ✅ ชิดซ้าย
+            textAlign: "left",
           }}
           title={filename}
         >
@@ -202,7 +248,7 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            textAlign: "left", // ✅ ชิดซ้าย
+            textAlign: "left",
           }}
           title={taskCode}
         >
@@ -224,20 +270,17 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                textAlign: "left", // ✅ ชิดซ้าย
+                textAlign: "left",
               }}
               title={material}
             >
               {material}
             </div>
           )}
-          <p>{quantity} ชิ้น</p>
+          {quantity ? <p>{quantity} ชิ้น</p> : null}
         </div>
       </div>
 
-      {/* Filename */}
-
-      {/* Print button */}
       {/* Print & Download buttons */}
       <div
         style={{
@@ -295,9 +338,9 @@ const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
           ReactDOM.createPortal(
             <PDFPrintModal
               drawingInfo={{
-                customer: "",
-                poNumber: "",
-                qtNumber: "",
+                customer: customer,
+                poNumber: poNumber,
+                qtNumber: qtNumber,
               }}
               taskID={taskCode}
               fileUrl={fileUrl}

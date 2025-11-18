@@ -201,6 +201,11 @@ const TaskDetailPage = () => {
               return (
                 <div key={`${sIdx}-${idx}`} className="basis-1/6">
                   <PdfThumbnail
+                    drawingInfo={{
+                      customer: currentTask.titleName,
+                      poNumber: currentTask.poNumber,
+                      qtNumber: currentTask.qtNumber,
+                    }}
                     taskCode={subtask.taskID}
                     quantity={subtask.quantity}
                     filePath={`${import.meta.env.VITE_BASE_URL}/api${

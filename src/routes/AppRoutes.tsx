@@ -8,6 +8,7 @@ import LoginPage from "../pages/LoginPage/LoginPage";
 import PrivateRoute from "../layouts/PrivateRoute";
 import DashboardPage from "../pages/DashboardPage/DashboardPage";
 import TaskOverviewPage from "../pages/TaskOverviewPage/TaskOverviewPage";
+import DrawingPage from "../pages/DrawingPage/DrawingPage";
 
 export const AppRoutes = () => {
   return (
@@ -54,6 +55,14 @@ export const AppRoutes = () => {
               <StatusTrackingPage />
             </PrivateRoute>
           }
+        />{" "}
+        <Route
+          path="/drawing"
+          element={
+            <PrivateRoute>
+              <DrawingPage />
+            </PrivateRoute>
+          }
         />
         <Route
           path="/Task/:taskId"
@@ -68,6 +77,7 @@ export const AppRoutes = () => {
           element={
             <PrivateRoute>
               <PDFPrintPage
+                drawingInfo={{}}
                 fileUrl={""}
                 isOpen={false}
                 onClose={function (): void {
