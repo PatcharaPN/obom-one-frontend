@@ -15,6 +15,11 @@ const PDFPrintPageWrapper: React.FC = () => {
         throw new Error("Function not implemented.");
       }}
       taskID={taskId}
+      drawingInfo={{
+        customer: undefined,
+        poNumber: undefined,
+        qtNumber: undefined,
+      }}
     />
   );
 };

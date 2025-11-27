@@ -35,8 +35,8 @@ const LazyPdfThumbnail = ({ d }: { d: any }) => {
 const DrawingPage = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [companyFilter, setCompanyFilter] = useState<"ALL" | "J" | "S">("ALL");
+  const [searchTerm] = useState("");
+  const [companyFilter] = useState<"ALL" | "J" | "S">("ALL");
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -117,11 +117,12 @@ const DrawingPage = () => {
 
       <div className="p-5">
         <p className="text-xl">รวมทั้งหมด {tasks.length} รายการ</p>
-
-        <div className="grid grid-cols-6 gap-4 pt-8">
-          {filteredTasks.map((d, dIdx) => (
-            <LazyPdfThumbnail key={dIdx} d={d} />
-          ))}
+        <div className="w-full">
+          <div className=" grid grid-cols-6 gap-4 pt-8">
+            {filteredTasks.map((d, dIdx) => (
+              <LazyPdfThumbnail key={dIdx} d={d} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
 interface PdfThumbnailProps {
-  drawingInfo: { customer?: string; poNumber?: string; qtNumber?: string };
+  drawingInfo?: { customer?: string; poNumber?: string; qtNumber?: string };
   fileUrl: string;
   width?: number;
   taskCode?: string;
@@ -22,7 +22,7 @@ interface PdfThumbnailProps {
 
 const PdfThumbnail: React.FC<PdfThumbnailProps> = ({
   fileUrl,
-  drawingInfo: { customer, poNumber, qtNumber },
+  drawingInfo: { customer, poNumber, qtNumber } = {},
   width = 200,
   height = 220,
   filename,
